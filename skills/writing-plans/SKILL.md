@@ -119,7 +119,13 @@ git commit -m "feat: add specific feature"
 
 The `Signals` line expands the profile so executing agents know exactly what to run without looking up the profile. If no profile matches, default to `integration` (safest).
 
-If the project does not use Docker, omit verification profiles entirely.
+**Docker is compulsory.** If the project does not already use Docker, the plan MUST include a **Task 0: Docker Environment Setup** that creates `Dockerfile`, `docker-compose.yml`, and any necessary container configuration from scratch. This task should:
+- Define services needed for the application (app server, database, cache, etc.)
+- Include health checks and volume mounts for development
+- Verify containers build and start successfully
+- Be tagged with verification profile `infrastructure`
+
+**Verification is compulsory.** Every task must have a verification profile and signals — no exceptions. Skipping verification is not an option regardless of project size or complexity.
 
 ## No Placeholders
 
@@ -136,7 +142,8 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - Complete code in every step — if a step changes code, show the code
 - Exact commands with expected output
 - DRY, YAGNI, TDD, frequent commits
-- Tag every task with a verification profile (use verification-profiles skill)
+- Tag every task with a verification profile (use verification-profiles skill) — **no exceptions**
+- Docker and verification are **compulsory** — if the project has no Docker setup, add Task 0 to create it from scratch
 
 ## Self-Review
 
