@@ -26,15 +26,25 @@ Task tool (general-purpose):
 
     **Ask them now.** Raise any concerns before starting work.
 
+    ## Verification Profile
+
+    This task's verification profile: [PROFILE from plan, or "none"]
+    Signals: [SIGNALS from plan, or "n/a"]
+
+    After you commit, the controller will run Docker verification against these signals
+    using the docker-verified-execution skill (Ralph Loop). If Docker verification fails,
+    you will be re-dispatched with the failure details to fix the issues.
+
     ## Your Job
 
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Write tests (following TDD if task says to)
-    3. Verify implementation works
-    4. Commit your work
-    5. Self-review (see below)
-    6. Report back
+    3. Verify implementation works (local tests pass)
+    4. If Docker is available: ensure your code works with `docker compose up`
+    5. Commit your work
+    6. Self-review (see below)
+    7. Report back
 
     Work from: [directory]
 

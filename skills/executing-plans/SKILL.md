@@ -27,7 +27,9 @@ For each task:
 1. Mark as in_progress
 2. Follow each step exactly (plan has bite-sized steps)
 3. Run verifications as specified
-4. Mark as completed
+4. **If task has a Verification Profile:** Invoke `superpowers:docker-verified-execution` with the task's signals. This runs the Ralph Loop (deploy → test → diagnose → fix) against Docker containers. Do not proceed until Docker verification passes or escalate if STUCK/EXHAUSTED.
+5. **If task has no Verification Profile:** Skip Docker verification (documentation, config-only tasks).
+6. Mark as completed
 
 ### Step 3: Complete Development
 
@@ -68,3 +70,9 @@ After all tasks complete and verified:
 - **superpowers:using-git-worktrees** - REQUIRED: Set up isolated workspace before starting
 - **superpowers:writing-plans** - Creates the plan this skill executes
 - **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+**Docker verification skills (when tasks have verification profiles):**
+- **superpowers:docker-verified-execution** - Ralph Loop per task: deploy → test → diagnose → fix
+- **superpowers:verification-gate** - Runs verification signals defined in task profile
+- **superpowers:verification-profiles** - Defines which signals each task type requires
+- **superpowers:structured-logs** - Parses container logs for diagnosis
