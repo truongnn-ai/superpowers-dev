@@ -9,7 +9,7 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+**Core principle:** Fresh subagent per task + Docker verification + two-stage review (spec then quality) = high quality, fast iteration
 
 ## When to Use
 
@@ -49,6 +49,10 @@ digraph process {
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
         "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
+        "Task has verification profile?" [shape=diamond];
+        "Run Docker verification (docker-verified-execution)" [shape=box style=filled fillcolor=lightyellow];
+        "Docker verification passes?" [shape=diamond];
+        "Implementer subagent fixes Docker failures" [shape=box];
         "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
         "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
         "Implementer subagent fixes spec gaps" [shape=box];
@@ -68,7 +72,13 @@ digraph process {
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
-    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Task has verification profile?";
+    "Task has verification profile?" -> "Run Docker verification (docker-verified-execution)" [label="yes"];
+    "Task has verification profile?" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="no — skip Docker verification"];
+    "Run Docker verification (docker-verified-execution)" -> "Docker verification passes?";
+    "Docker verification passes?" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="yes"];
+    "Docker verification passes?" -> "Implementer subagent fixes Docker failures" [label="no — Ralph Loop"];
+    "Implementer subagent fixes Docker failures" -> "Run Docker verification (docker-verified-execution)" [label="retry"];
     "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
     "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
     "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
@@ -83,6 +93,21 @@ digraph process {
     "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
 }
 ```
+
+## Docker Verification Step
+
+After the implementer completes and before spec review, check if the task has a **Verification Profile** (tagged by writing-plans using verification-profiles skill).
+
+**If the task has a verification profile:**
+1. Invoke `superpowers:docker-verified-execution` with the task's signals
+2. The Ralph Loop runs: deploy to Docker → run verification signals → diagnose failures → fix → retry
+3. If Docker verification passes → proceed to spec review
+4. If STUCK or EXHAUSTED → escalate to user, do not proceed to review
+
+**If the task has no verification profile:**
+- Skip Docker verification entirely (e.g., documentation-only tasks, config changes without Docker)
+
+**Key:** The controller (you) orchestrates this step. The implementer subagent handles fixes when Docker verification fails. This ensures code works in real containers before review begins.
 
 ## Model Selection
 
@@ -269,6 +294,12 @@ Done!
 - **superpowers:writing-plans** - Creates the plan this skill executes
 - **superpowers:requesting-code-review** - Code review template for reviewer subagents
 - **superpowers:finishing-a-development-branch** - Complete development after all tasks
+
+**Docker verification skills (when tasks have verification profiles):**
+- **superpowers:docker-verified-execution** - Ralph Loop: deploy → test → diagnose → fix per task
+- **superpowers:verification-gate** - Runs verification signals defined in task profile
+- **superpowers:verification-profiles** - Defines which signals each task type requires
+- **superpowers:structured-logs** - Parses container logs for diagnosis during Ralph Loop
 
 **Subagents should use:**
 - **superpowers:test-driven-development** - Subagents follow TDD for each task
