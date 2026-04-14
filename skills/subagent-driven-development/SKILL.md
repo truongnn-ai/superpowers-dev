@@ -5,11 +5,11 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+Execute plan by negotiating an ITC per task, dispatching a fresh implementer subagent, running two-stage review (spec then quality), and verifying with a runtime test harness before marking tasks complete.
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+**Core principle:** ITC negotiation before each task + fresh implementer + two-stage review + runtime test harness = verifiable, high-quality iteration
 
 ## When to Use
 
@@ -34,7 +34,9 @@ digraph when_to_use {
 **vs. Executing Plans (parallel session):**
 - Same session (no context switch)
 - Fresh subagent per task (no context pollution)
+- Per-task ITC negotiation (coding-agent + testing-agent) before implementation
 - Two-stage review after each task: spec compliance first, then code quality
+- Runtime test harness (unit + integration) verifies code actually works before task complete
 - Faster iteration (no human-in-loop between tasks)
 
 ## The Process
@@ -49,6 +51,7 @@ digraph process {
         "Dispatch testing-agent ITC Round 2 (./testing-agent-prompt.md)" [shape=box];
         "ITC agreed? (both ✅)" [shape=diamond];
         "Round 3 or escalate to user" [shape=box];
+        "Escalate task ITC to user" [shape=box];
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
@@ -87,6 +90,7 @@ digraph process {
     "ITC agreed? (both ✅)" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "ITC agreed? (both ✅)" -> "Round 3 or escalate to user" [label="no"];
     "Round 3 or escalate to user" -> "Dispatch coding-agent ITC Round 1 (./coding-agent-prompt.md)" [label="round 3: re-dispatch coding-agent with amendments"];
+    "Round 3 or escalate to user" -> "Escalate task ITC to user" [label="coding-agent disputes — stop and ask user"];
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -157,7 +161,7 @@ Solution ITC valid tiers: `e2e`, `full_suite` — these never appear in task ITC
 
 ### Solution ITC
 
-Negotiated once after all tasks complete, before the E2E harness runs. The coding agent scans the **actual implementation** (not the plan) to produce accurate entry points. The testing agent proposes E2E scenarios and full-suite commands based on what was actually built.
+Negotiated once after all tasks complete, before the E2E harness runs. The coding agent scans the **actual implementation** (not the plan) to produce accurate entry points. The testing agent proposes E2E scenarios and full-suite commands based on what was actually built. The same three-round protocol applies: if the testing agent lists amendments in Round 2, re-dispatch the coding agent for Round 3 before locking the contract. The flowchart's escalation arc represents only the terminal case (3 rounds without agreement).
 
 See full contract structure: `docs/superpowers/specs/2026-04-14-e2e-test-harness-design.md`
 
@@ -199,7 +203,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 Test-runner subagents report one of three statuses: PASS | FAIL | BLOCKED
 
 **PASS:** All commands exited 0 and acceptance criteria are met.
-- Unit PASS → check `tiers_required`: if `[unit, integration]`, dispatch integration test-runner; if `[unit]` only, mark task complete
+- Unit PASS → read `tiers_required` from the task ITC file in `docs/superpowers/contracts/`: if `[unit, integration]`, dispatch integration test-runner; if `[unit]` only, mark task complete
 - Integration PASS → mark task complete
 - E2E + full suite PASS → proceed to final code review
 
@@ -248,7 +252,19 @@ You: I'm using Subagent-Driven Development to execute this plan.
 Task 1: Hook installation script
 
 [Get Task 1 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
+
+[Dispatch coding-agent ITC Round 1 — task spec + existing hooks/ directory context]
+Coding agent: Proposes test_contract with tiers_required: [unit], 2 test commands.
+              Rationale: no external services, pure filesystem writes.
+              coding_agent: ✅
+
+[Dispatch testing-agent ITC Round 2 — task spec + coding agent's draft]
+Testing agent: ✅ Spec compliant — commands target specific files, must_cover includes
+               idempotent install and --force flag behavior.
+
+[Write docs/superpowers/contracts/2026-04-14T14-30-00-task_itc_1.md and commit]
+
+[Dispatch implementation subagent with full task text + context + ITC path]
 
 Implementer: "Before I begin - should the hook be installed at user or system level?"
 
@@ -266,6 +282,16 @@ Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
 
 [Get git SHAs, dispatch code quality reviewer]
 Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
+
+[Dispatch unit test-runner — commands from task ITC]
+Test runner:
+  Status: PASS
+  Results:
+    - command: "npm test -- tests/install-hook.test.js"
+      status: PASS
+      summary: "5/5 tests passed"
+
+[task ITC tiers_required: [unit] — skip integration harness]
 
 [Mark Task 1 complete]
 
@@ -334,6 +360,8 @@ Done!
 **Quality gates:**
 - Self-review catches issues before handoff
 - Two-stage review: spec compliance, then code quality
+- Runtime test harness: unit tests (always) + integration tests (when task ITC requires)
+- E2E harness after all tasks: full user journey verified before final review
 - Review loops ensure fixes actually work
 - Spec compliance prevents over/under-building
 - Code quality ensures implementation is well-built
