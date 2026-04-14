@@ -77,6 +77,7 @@ digraph process {
     "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [shape=box];
     "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)" [shape=box];
     "Solution ITC agreed? (both ✅)" [shape=diamond];
+    "Solution Round 3 or escalate to user" [shape=box];
     "Escalate solution ITC to user" [shape=box];
     "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [shape=box];
     "E2E + full suite PASS?" [shape=diamond];
@@ -120,7 +121,9 @@ digraph process {
     "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" -> "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)";
     "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)" -> "Solution ITC agreed? (both ✅)";
     "Solution ITC agreed? (both ✅)" -> "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [label="yes"];
-    "Solution ITC agreed? (both ✅)" -> "Escalate solution ITC to user" [label="no — 3 rounds, no agreement"];
+    "Solution ITC agreed? (both ✅)" -> "Solution Round 3 or escalate to user" [label="no"];
+    "Solution Round 3 or escalate to user" -> "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [label="round 3: re-dispatch coding-agent with amendments"];
+    "Solution Round 3 or escalate to user" -> "Escalate solution ITC to user" [label="3 rounds, no agreement"];
     "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" -> "E2E + full suite PASS?";
     "E2E + full suite PASS?" -> "Implementer fixes E2E failures" [label="FAIL"];
     "Implementer fixes E2E failures" -> "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [label="re-run"];
@@ -298,7 +301,18 @@ Test runner:
 Task 2: Recovery modes
 
 [Get Task 2 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
+
+[Dispatch coding-agent ITC Round 1 — task spec + codebase context]
+Coding agent: Proposes tiers_required: [unit, integration].
+              Rationale: recovery modes write to and read from the index DB.
+              coding_agent: ✅
+
+[Dispatch testing-agent ITC Round 2 — task spec + coding agent's draft]
+Testing agent: ✅ Approved — commands target specific files, required_services lists the test DB.
+
+[Write docs/superpowers/contracts/2026-04-14T14-32-00-task_itc_2.md and commit]
+
+[Dispatch implementation subagent with full task text + context + ITC path]
 
 Implementer: [No questions, proceeds]
 Implementer:
@@ -326,6 +340,24 @@ Implementer: Extracted PROGRESS_INTERVAL constant
 
 [Code reviewer reviews again]
 Code reviewer: ✅ Approved
+
+[Dispatch unit test-runner — commands from task ITC]
+Test runner:
+  Status: PASS
+  Results:
+    - command: "npm test -- src/recovery.test.ts"
+      status: PASS
+      summary: "8/8 tests passed"
+
+[task ITC tiers_required: [unit, integration] — dispatch integration test-runner]
+
+[Dispatch integration test-runner — integration commands from task ITC]
+Test runner:
+  Status: PASS
+  Results:
+    - command: "npm test -- tests/integration/recovery.test.ts"
+      status: PASS
+      summary: "4/4 tests passed"
 
 [Mark Task 2 complete]
 
