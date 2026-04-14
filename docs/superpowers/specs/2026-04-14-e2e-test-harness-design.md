@@ -158,6 +158,15 @@ sign_off:
   testing_agent: ✅
 ```
 
+**Tier vocabulary — task ITC vs solution ITC are separate:**
+
+Task ITC valid tiers: `unit`, `integration`
+Solution ITC valid tiers: `e2e`, `full_suite`
+
+These vocabularies do not overlap. A task ITC never declares `e2e`. A solution ITC never declares `unit` or `integration` — those were already verified per-task.
+
+**`unit` is always the minimum tier for task ITCs.** Every task has unit tests. `integration` is added on top when the task crosses a service boundary.
+
 **Tier selection guide:**
 
 | Task type | Example | tiers_required |
@@ -165,7 +174,7 @@ sign_off:
 | Isolated logic, no external deps | Health check, pure utility, data transformer | `[unit]` |
 | Component with external boundary | API endpoint + DB, auth middleware | `[unit, integration]` |
 | Frontend integrating with backend | Login form calling auth API | `[unit, integration]` |
-| Full user journey (solution-level only) | Login → session → protected route | Solution ITC `[e2e]` |
+| Full user journey (solution-level only) | Login → session → protected route | Solution ITC `[e2e, full_suite]` |
 
 ### Solution ITC (`YYYY-MM-DDTHH-MM-SS-solution_itc.md`)
 
@@ -366,9 +375,47 @@ Task tool (general-purpose):
 
 **`test-runner-solution-prompt.md`** — for solution-level (E2E + full suite):
 
-Same structure, extended with:
-- Verify full stack is running (API + DB + frontend built) before running
-- Report scenario-level results for E2E (which user flows passed/failed) with enough detail for the implementer to know what broke
+```
+Task tool (general-purpose):
+  description: "Run E2E and full suite for solution"
+  prompt: |
+    You are a test runner. Execute these commands exactly and report results.
+    Do NOT fix anything. Do NOT modify any files.
+
+    ## Required Stack
+    Verify before running:
+    [solution_ITC.test_contract.e2e.required_services]
+    If any service is not running, report BLOCKED immediately.
+
+    ## Commands to Run
+    E2E: [solution_ITC.test_contract.e2e.commands]
+    Full suite: [solution_ITC.test_contract.full_suite.command]
+
+    ## E2E Scenarios to Verify
+    [solution_ITC.test_contract.e2e.scenarios — list each]
+
+    ## Your Job
+    1. Verify full stack is running (API + DB + frontend built)
+    2. Run E2E commands, capture which scenarios passed/failed
+    3. Run full suite command, capture pass/fail counts
+    4. Report results — do NOT fix, do NOT modify files
+
+    ## Report Format
+    Status: PASS | FAIL | BLOCKED
+
+    E2E Results:
+      - scenario: "<scenario name>"
+        status: PASS | FAIL
+        failure_detail: (if FAIL) what user action failed and why
+
+    Full Suite:
+      status: PASS | FAIL
+      summary: "<X/Y tests passed>"
+      failures: (if FAIL) list with file:line
+
+    BLOCKED if: required service not running, tool not installed, build missing.
+    Report BLOCKED with reason — do NOT attempt to fix.
+```
 
 ### Output Status → Controller Action
 
