@@ -363,9 +363,33 @@ Test runner:
 
 ...
 
-[After all tasks]
-[Dispatch final code-reviewer]
-Final reviewer: All requirements met, ready to merge
+[After all tasks complete]
+
+[Dispatch coding-agent Solution ITC Round 1 — scans actual implementation: entry points, protected routes]
+Coding agent: Documents real routes built. Proposes e2e + full_suite tiers.
+              coding_agent: ✅
+
+[Dispatch testing-agent Solution ITC Round 2 — task spec + coding agent's draft]
+Testing agent: ✅ Approved — E2E scenarios cover all user flows, full suite command confirmed.
+
+[Write docs/superpowers/contracts/2026-04-14T16-00-00-solution_itc.md and commit]
+
+[Dispatch E2E + full suite test-runner — commands from solution ITC]
+Test runner:
+  Status: PASS
+  E2E Results:
+    - scenario: "user registration + email verification"
+      status: PASS
+    - scenario: "login and session persistence"
+      status: PASS
+    - scenario: "protected route access with valid token"
+      status: PASS
+  Full Suite:
+    status: PASS
+    summary: "47/47 tests passed"
+
+[Dispatch final code reviewer subagent for entire implementation]
+Final reviewer: All requirements met, no regressions, ready to merge
 
 Done!
 ```
