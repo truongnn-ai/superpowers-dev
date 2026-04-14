@@ -47,8 +47,8 @@ digraph process {
 
     subgraph cluster_per_task {
         label="Per Task";
-        "Dispatch coding-agent ITC Round 1 (./coding-agent-prompt.md)" [shape=box];
-        "Dispatch testing-agent ITC Round 2 (./testing-agent-prompt.md)" [shape=box];
+        "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [shape=box];
+        "Dispatch testing-agent ITC (./testing-agent-prompt.md)" [shape=box];
         "ITC agreed? (both ✅)" [shape=diamond];
         "Round 3 or escalate to user" [shape=box];
         "Escalate task ITC to user" [shape=box];
@@ -85,13 +85,13 @@ digraph process {
     "Dispatch final code reviewer subagent for entire implementation" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch coding-agent ITC Round 1 (./coding-agent-prompt.md)";
-    "Dispatch coding-agent ITC Round 1 (./coding-agent-prompt.md)" -> "Dispatch testing-agent ITC Round 2 (./testing-agent-prompt.md)";
-    "Dispatch testing-agent ITC Round 2 (./testing-agent-prompt.md)" -> "ITC agreed? (both ✅)";
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)";
+    "Dispatch coding-agent ITC (./coding-agent-prompt.md)" -> "Dispatch testing-agent ITC (./testing-agent-prompt.md)";
+    "Dispatch testing-agent ITC (./testing-agent-prompt.md)" -> "ITC agreed? (both ✅)";
     "ITC agreed? (both ✅)" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
     "ITC agreed? (both ✅)" -> "Round 3 or escalate to user" [label="no"];
-    "Round 3 or escalate to user" -> "Dispatch coding-agent ITC Round 1 (./coding-agent-prompt.md)" [label="round 3: re-dispatch coding-agent with amendments"];
-    "Round 3 or escalate to user" -> "Escalate task ITC to user" [label="coding-agent disputes — stop and ask user"];
+    "Round 3 or escalate to user" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [label="round 3: re-dispatch coding-agent with amendments"];
+    "Round 3 or escalate to user" -> "Escalate task ITC to user" [label="3 rounds, no agreement"];
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -116,7 +116,7 @@ digraph process {
     "Integration tests PASS?" -> "Mark task complete in TodoWrite" [label="PASS"];
     "Integration tier required? (task ITC tiers_required)" -> "Mark task complete in TodoWrite" [label="no"];
     "Mark task complete in TodoWrite" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch coding-agent ITC Round 1 (./coding-agent-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [label="yes"];
     "More tasks remain?" -> "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [label="no"];
     "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" -> "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)";
     "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)" -> "Solution ITC agreed? (both ✅)";
