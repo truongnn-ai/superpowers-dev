@@ -37,13 +37,31 @@ Task tool (general-purpose):
 
     [Paste solution_ITC.acceptance_criteria]
 
+    ## Playwright Options
+
+    For E2E and full suite tests you have two execution modes — choose based on availability:
+
+    **playwright-cli** (preferred when Playwright is installed in the project):
+    - Run commands from the `## E2E Commands` and `## Full Suite Command` sections directly via Bash
+    - Example: `npx playwright test tests/e2e/auth.spec.ts`
+    - Use this when the ITC provides explicit test file commands
+
+    **playwright-mcp** (use when playwright-cli is unavailable or commands fail to run):
+    - Use the browser MCP tools (`browser_navigate`, `browser_click`, `browser_fill_form`, `browser_snapshot`, etc.) to manually walk through each scenario in `## E2E Scenarios to Verify`
+    - Navigate to the app URL, interact with the UI step by step, and verify expected outcomes
+    - Use `browser_snapshot` or `browser_take_screenshot` to capture evidence of pass/fail
+    - Report each scenario individually based on what you observed
+
+    If neither is available, report BLOCKED with reason "playwright-cli not installed and playwright-mcp not available".
+
     ## Your Job
 
     1. Verify full stack is running (check each required service).
        Report BLOCKED immediately if anything is missing — do not run tests.
-    2. Run E2E commands. For each scenario in the scenarios list, note pass or fail.
-    3. Run full suite command. Capture summary counts and any failures.
-    4. Report results in the format below. Do NOT fix failures.
+    2. Choose execution mode (see Playwright Options above).
+    3. Run E2E tests. For each scenario in the scenarios list, note pass or fail.
+    4. Run full suite command (playwright-cli) or verify all scenarios (playwright-mcp).
+    5. Report results in the format below. Do NOT fix failures.
 
     ## Report Format
 
