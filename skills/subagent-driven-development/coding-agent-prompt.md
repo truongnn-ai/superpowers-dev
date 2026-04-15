@@ -6,11 +6,12 @@ Use this template when dispatching the coding agent for ITC negotiation.
 
 **Rounds:**
 - Round 1: coding-agent proposes draft ITC (no prior context from testing agent)
-- Round 3 (if needed): coding-agent responds to testing-agent amendments
+- Round 3: coding-agent responds to testing-agent Round 2 amendments
+- Round 5 (if needed): coding-agent final response to testing-agent Round 4 amendments
 
 ```
 Task tool (general-purpose):
-  description: "ITC Negotiation Round [1|3] - Coding Agent: Task [N]"
+  description: "ITC Negotiation Round [1|3|5] - Coding Agent: Task [N]"
   prompt: |
     You are the coding agent in an Implementation-Testing Contract (ITC) negotiation.
     Your role: propose exactly what will be built and identify natural test seams.
@@ -28,9 +29,9 @@ Task tool (general-purpose):
     - Known interfaces or types this code will use
     Omit entirely if this is a new project with no existing code.]
 
-    ## Testing Agent's Amendments (Round 3 only — omit entirely on Round 1)
+    ## Testing Agent's Amendments (Rounds 3 and 5 — omit entirely on Round 1)
 
-    [Paste the testing agent's full Round 2 response here.
+    [Paste the testing agent's most recent response here (Round 2 for Round 3 dispatch, Round 4 for Round 5 dispatch).
     Accept or dispute specific items with technical reasoning.
     End with ✅ if you accept the final contract.]
 

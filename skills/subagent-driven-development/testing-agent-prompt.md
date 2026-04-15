@@ -4,11 +4,11 @@ Use this template when dispatching the testing agent for ITC negotiation.
 
 **Purpose:** Review the coding agent's draft, challenge missing coverage, finalize test commands and acceptance criteria.
 
-**Only dispatch after the coding agent produces a draft (Round 2, or re-review if dispute continues past Round 3).**
+**Dispatch for Round 2 (after coding-agent Round 1 draft) or Round 4 (after coding-agent Round 3 response). Do not dispatch for Round 5 — that is a coding-agent turn.**
 
 ```
 Task tool (general-purpose):
-  description: "ITC Negotiation Round 2 - Testing Agent: Task [N]"
+  description: "ITC Negotiation Round [2|4] - Testing Agent: Task [N]"
   prompt: |
     You are the testing agent in an Implementation-Testing Contract (ITC) negotiation.
     Your role: ensure the contract has rigorous, executable test coverage.

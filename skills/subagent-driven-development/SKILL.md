@@ -50,7 +50,7 @@ digraph process {
         "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [shape=box];
         "Dispatch testing-agent ITC (./testing-agent-prompt.md)" [shape=box];
         "ITC agreed? (both ✅)" [shape=diamond];
-        "Round 3 or escalate to user" [shape=box];
+        "Rounds 3–5 or escalate to user" [shape=box];
         "Escalate task ITC to user" [shape=box];
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer subagent asks questions?" [shape=diamond];
@@ -77,7 +77,7 @@ digraph process {
     "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [shape=box];
     "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)" [shape=box];
     "Solution ITC agreed? (both ✅)" [shape=diamond];
-    "Solution Round 3 or escalate to user" [shape=box];
+    "Solution Rounds 3–5 or escalate to user" [shape=box];
     "Escalate solution ITC to user" [shape=box];
     "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [shape=box];
     "E2E + full suite PASS?" [shape=diamond];
@@ -89,9 +89,9 @@ digraph process {
     "Dispatch coding-agent ITC (./coding-agent-prompt.md)" -> "Dispatch testing-agent ITC (./testing-agent-prompt.md)";
     "Dispatch testing-agent ITC (./testing-agent-prompt.md)" -> "ITC agreed? (both ✅)";
     "ITC agreed? (both ✅)" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "ITC agreed? (both ✅)" -> "Round 3 or escalate to user" [label="no"];
-    "Round 3 or escalate to user" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [label="round 3: re-dispatch coding-agent with amendments"];
-    "Round 3 or escalate to user" -> "Escalate task ITC to user" [label="3 rounds, no agreement"];
+    "ITC agreed? (both ✅)" -> "Rounds 3–5 or escalate to user" [label="no"];
+    "Rounds 3–5 or escalate to user" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [label="re-dispatch coding-agent with amendments (rounds 3, 5)"];
+    "Rounds 3–5 or escalate to user" -> "Escalate task ITC to user" [label="5 rounds, no agreement"];
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -121,9 +121,9 @@ digraph process {
     "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" -> "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)";
     "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)" -> "Solution ITC agreed? (both ✅)";
     "Solution ITC agreed? (both ✅)" -> "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [label="yes"];
-    "Solution ITC agreed? (both ✅)" -> "Solution Round 3 or escalate to user" [label="no"];
-    "Solution Round 3 or escalate to user" -> "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [label="round 3: re-dispatch coding-agent with amendments"];
-    "Solution Round 3 or escalate to user" -> "Escalate solution ITC to user" [label="3 rounds, no agreement"];
+    "Solution ITC agreed? (both ✅)" -> "Solution Rounds 3–5 or escalate to user" [label="no"];
+    "Solution Rounds 3–5 or escalate to user" -> "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [label="re-dispatch coding-agent with amendments (rounds 3, 5)"];
+    "Solution Rounds 3–5 or escalate to user" -> "Escalate solution ITC to user" [label="5 rounds, no agreement"];
     "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" -> "E2E + full suite PASS?";
     "E2E + full suite PASS?" -> "Implementer fixes E2E failures" [label="FAIL"];
     "Implementer fixes E2E failures" -> "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [label="re-run"];
@@ -147,7 +147,13 @@ Round 2: testing-agent(task spec + draft ITC)
   → lists amendments: proceed to Round 3
 Round 3: coding-agent(task spec + testing-agent amendments)
   → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
-  → disputes with reasoning: escalate to user before proceeding
+  → disputes with reasoning: proceed to Round 4
+Round 4: testing-agent(task spec + coding-agent's Round 3 position)
+  → signs ✅: contract locked
+  → lists amendments: proceed to Round 5
+Round 5: coding-agent(task spec + testing-agent's Round 4 amendments) — final round
+  → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
+  → still disputes: escalate to user before proceeding
 ```
 
 ### Contract File Naming
@@ -164,7 +170,7 @@ Solution ITC valid tiers: `e2e`, `full_suite` — these never appear in task ITC
 
 ### Solution ITC
 
-Negotiated once after all tasks complete, before the E2E harness runs. The coding agent scans the **actual implementation** (not the plan) to produce accurate entry points. The testing agent proposes E2E scenarios and full-suite commands based on what was actually built. The same three-round protocol applies: if the testing agent lists amendments in Round 2, re-dispatch the coding agent for Round 3 before locking the contract. The flowchart's escalation arc represents only the terminal case (3 rounds without agreement).
+Negotiated once after all tasks complete, before the E2E harness runs. The coding agent scans the **actual implementation** (not the plan) to produce accurate entry points. The testing agent proposes E2E scenarios and full-suite commands based on what was actually built. The same five-round protocol applies: negotiation alternates between coding-agent (odd rounds) and testing-agent (even rounds) up to Round 5. The flowchart's escalation arc represents only the terminal case (5 rounds without agreement).
 
 See full contract structure: `docs/superpowers/specs/2026-04-14-e2e-test-harness-design.md`
 
