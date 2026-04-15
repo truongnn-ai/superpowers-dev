@@ -218,13 +218,17 @@ Test-runner subagents report one of three statuses: PASS | FAIL | BLOCKED
 
 **BLOCKED:** Commands could not run. The environment is not ready.
 - Read `reason` and `resolution` from the test-runner report
-- Resolve the environment issue (start missing service, set env var, build frontend, seed DB)
-- Re-dispatch the same test-runner — do NOT dispatch the implementer
-- BLOCKED is an environment problem, not a code problem
+- Assess whether you can resolve the issue yourself:
+  - **Resolve autonomously** if the fix is a runnable command you can execute safely — e.g. `npm run build`, starting a local test server, running a seed script
+  - **Escalate to the user** for issues you cannot handle yourself — env vars requiring credentials or secrets, external service configuration, complex or destructive operations, anything requiring human judgment
+- After resolving (or after the user confirms resolution), re-dispatch the same test-runner
+- Do NOT dispatch the implementer — BLOCKED is an environment problem, not a code problem
 
 **Never:**
 - Proceed past FAIL without re-running the harness after implementer fixes
-- Dispatch the implementer in response to BLOCKED (fix the environment instead)
+- Dispatch the implementer in response to BLOCKED (resolve the environment or escalate to user instead)
+- Attempt to set env vars or configure external services autonomously — escalate to user for those
+- Re-dispatch the test-runner without first resolving or getting user confirmation on the BLOCKED issue
 - Renegotiate the ITC because tests are failing (fix the code, not the contract)
 - Run integration test-runner before unit tests PASS
 
@@ -446,7 +450,8 @@ Done!
 - Skip ITC negotiation because "the task is simple" (every task gets a contract)
 - Start implementing before both agents have signed the ITC ✅
 - Renegotiate the ITC because tests are failing (fix the code, not the contract)
-- Dispatch implementer in response to BLOCKED test-runner (fix the environment instead)
+- Dispatch implementer in response to BLOCKED test-runner (resolve environment or escalate to user instead)
+- Attempt to set env vars or configure external services autonomously — escalate to user for those
 - Proceed past FAIL test-runner without re-running harness after implementer fix
 - Run integration test-runner before unit tests PASS
 - Forget to write and commit the ITC file to docs/superpowers/contracts/ after negotiation
