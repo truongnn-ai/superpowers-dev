@@ -76,7 +76,7 @@ Task tool (general-purpose):
         state_persistence: { status: PASS }
         feature_interaction: { status: PASS }
         auth_boundary:
-          status: NA
+          status: NA   # NA (uppercase) is the output status for input `na:` cells
           justification: "[echoed verbatim from matrix cell]"
       J2: ...
 
