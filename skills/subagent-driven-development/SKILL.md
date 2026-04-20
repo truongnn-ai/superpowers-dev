@@ -170,9 +170,26 @@ Solution ITC valid tiers: `e2e`, `full_suite` — these never appear in task ITC
 
 ### Solution ITC
 
-Negotiated once after all tasks complete, before the E2E harness runs. The coding agent scans the **actual implementation** (not the plan) to produce accurate entry points. The testing agent proposes E2E scenarios and full-suite commands based on what was actually built. The same five-round protocol applies: negotiation alternates between coding-agent (odd rounds) and testing-agent (even rounds) up to Round 5. The flowchart's escalation arc represents only the terminal case (5 rounds without agreement).
+Negotiated once after all tasks complete, before the E2E harness runs.
 
-See full contract structure: `docs/superpowers/specs/2026-04-14-e2e-test-harness-design.md`
+**Required inputs** (load all three before dispatching Round 1):
+1. `docs/superpowers/specs/<date>-<topic>-journeys.yaml` — authoritative journey list, produced at brainstorm time.
+2. `skills/subagent-driven-development/testing-strategies.md` — the canonical strategy playbook.
+3. The actual implementation (coding agent scans the codebase, not the plan).
+
+**Output shape:** the signed solution ITC contains a `coverage_matrix` whose rows are journey IDs and whose columns are strategy IDs from the playbook. Every cell is either a `scenario` (with `command` and `assertion_shape`) or an `na` (with non-empty justification). Free-form `scenarios:` lists are no longer valid.
+
+**Protocol:** same five-round negotiation alternating between coding-agent (odd rounds) and testing-agent (even rounds) up to Round 5. The flowchart's escalation arc represents the terminal case (5 rounds without agreement).
+
+**Post-negotiation gate (before dispatching the solution test-runner):**
+Verify the signed ITC's `coverage_matrix` has:
+- A row for every journey in journeys.yaml.
+- A column for every strategy ID in testing-strategies.md.
+- A non-empty `scenario` or `na` value in every cell.
+
+If any row, column, or cell is missing, reject and re-dispatch Round 1.
+
+See full design: `docs/superpowers/specs/2026-04-20-e2e-coverage-matrix-design.md`
 
 ## Model Selection
 
@@ -375,28 +392,41 @@ Test runner:
 
 [After all tasks complete]
 
-[Dispatch coding-agent Solution ITC Round 1 — scans actual implementation: entry points, protected routes]
-Coding agent: Documents real routes built. Proposes e2e + full_suite tiers.
+[Load docs/superpowers/specs/<date>-<topic>-journeys.yaml and skills/subagent-driven-development/testing-strategies.md]
+
+[Dispatch coding-agent Solution ITC Round 1 — scans actual implementation + journeys.yaml + playbook]
+Coding agent: Documents real routes. Produces coverage_matrix with rows per journey,
+              columns per strategy (happy_path, negative_path, state_persistence,
+              feature_interaction, auth_boundary). Every cell = scenario or justified na.
               coding_agent: ✅
 
-[Dispatch testing-agent Solution ITC Round 2 — task spec + coding agent's draft]
-Testing agent: ✅ Approved — E2E scenarios cover all user flows, full suite command confirmed.
+[Dispatch testing-agent Solution ITC Round 2 — draft matrix + journeys.yaml + playbook]
+Testing agent: ✅ Approved — matrix complete, no shallow assertion_shapes, na justifications valid.
 
-[Write docs/superpowers/contracts/2026-04-14T16-00-00-solution_itc.md and commit]
+[Post-negotiation gate: verify matrix has row per journey × column per strategy, no empty cells]
 
-[Dispatch E2E + full suite test-runner — commands from solution ITC]
+[Write docs/superpowers/contracts/2026-04-20T16-00-00-solution_itc.md and commit]
+
+[Dispatch E2E + full suite test-runner — coverage_matrix + full_suite command]
 Test runner:
   Status: PASS
-  E2E Results:
-    - scenario: "user registration + email verification"
-      status: PASS
-    - scenario: "login and session persistence"
-      status: PASS
-    - scenario: "protected route access with valid token"
-      status: PASS
-  Full Suite:
+  matrix_results:
+    J1:
+      happy_path:          { status: PASS }
+      negative_path:       { status: PASS }
+      state_persistence:   { status: PASS }
+      feature_interaction: { status: PASS }
+      auth_boundary:       { status: PASS }
+    J2:
+      happy_path:          { status: PASS }
+      negative_path:       { status: PASS }
+      state_persistence:   { status: NA, justification: "Single atomic request, no multi-step state." }
+      feature_interaction: { status: PASS }
+      auth_boundary:       { status: NA, justification: "Fully public journey, no auth surface." }
+  full_suite:
     status: PASS
     summary: "47/47 tests passed"
+  overall: PASS
 
 [Dispatch final code reviewer subagent for entire implementation]
 Final reviewer: All requirements met, no regressions, ready to merge
