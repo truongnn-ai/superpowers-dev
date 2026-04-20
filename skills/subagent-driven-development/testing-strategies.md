@@ -1,6 +1,6 @@
 # Testing Strategies Playbook
 
-Canonical strategies the coverage matrix must address in every solution-level ITC. Column names in the matrix MUST match the section IDs below verbatim — do not invent new IDs inline; new strategies are introduced by appending sections to this file.
+Canonical strategies the coverage matrix must address in every solution-level ITC. These column names in the coverage matrix MUST match section IDs below verbatim — do not invent new IDs inline; new strategies are introduced by appending sections to this file.
 
 The testing-agent and coding-agent both walk this list for every journey listed in `<topic>-journeys.yaml` at solution-ITC negotiation time. Each journey × strategy cell is either a runnable scenario (with `command` and `assertion_shape`) or an explicit `na` with justification.
 
