@@ -10,7 +10,7 @@ Use this template when dispatching the test-runner for the solution-level E2E an
 Task tool (general-purpose):
   description: "Run E2E + full suite — solution harness"
   prompt: |
-    You are a test runner. Execute these commands exactly and report results.
+    You are a test runner. Execute the coverage matrix exactly as described and report results.
     Do NOT fix anything. Do NOT modify any files. Pure execution and reporting only.
 
     ## Required Stack
@@ -21,17 +21,13 @@ Task tool (general-purpose):
     If any service is not running or the frontend is not built:
     Report BLOCKED immediately with exactly what is missing. Do not run tests.
 
-    ## E2E Commands
+    ## Coverage Matrix
 
-    [Paste solution_ITC.test_contract.e2e.commands — one per line]
+    [Paste solution_ITC.test_contract.e2e.coverage_matrix verbatim — preserve journey IDs and strategy IDs exactly]
 
     ## Full Suite Command
 
     [Paste solution_ITC.test_contract.full_suite.command]
-
-    ## E2E Scenarios to Verify
-
-    [Paste solution_ITC.test_contract.e2e.scenarios — one per line]
 
     ## Acceptance Criteria
 
@@ -39,18 +35,16 @@ Task tool (general-purpose):
 
     ## Playwright Options
 
-    For E2E and full suite tests you have two execution modes — choose based on availability:
+    For matrix scenarios and the full suite you have two execution modes — choose based on availability:
 
     **playwright-cli** (preferred when Playwright is installed in the project):
-    - Run commands from the `## E2E Commands` and `## Full Suite Command` sections directly via Bash
-    - Example: `npx playwright test tests/e2e/auth.spec.ts`
-    - Use this when the ITC provides explicit test file commands
+    - For each `scenario` cell: run its `command` directly via Bash
+    - Run the full suite command directly via Bash
 
     **playwright-mcp** (use when playwright-cli is unavailable or commands fail to run):
-    - Use the browser MCP tools (`browser_navigate`, `browser_click`, `browser_fill_form`, `browser_snapshot`, etc.) to manually walk through each scenario in `## E2E Scenarios to Verify`
-    - Navigate to the app URL, interact with the UI step by step, and verify expected outcomes
+    - Use the browser MCP tools (`browser_navigate`, `browser_click`, `browser_fill_form`, `browser_snapshot`, etc.)
+    - For each `scenario` cell: walk the `assertion_shape` manually in the browser and verify the deep property stated
     - Use `browser_snapshot` or `browser_take_screenshot` to capture evidence of pass/fail
-    - Report each scenario individually based on what you observed
 
     If neither is available, report BLOCKED with reason "playwright-cli not installed and playwright-mcp not available".
 
@@ -59,30 +53,46 @@ Task tool (general-purpose):
     1. Verify full stack is running (check each required service).
        Report BLOCKED immediately if anything is missing — do not run tests.
     2. Choose execution mode (see Playwright Options above).
-    3. Run E2E tests. For each scenario in the scenarios list, note pass or fail.
-    4. Run full suite command (playwright-cli) or verify all scenarios (playwright-mcp).
+    3. Walk the coverage matrix row-by-row (journey-major), column-by-column (strategy-major):
+       - `scenario` cell: run the command, capture stdout/stderr, classify PASS or FAIL.
+         On FAIL, echo the cell's `assertion_shape` in the report so the implementer sees what deep property broke.
+       - `na` cell: do NOT execute. Echo the justification text into the report.
+    4. Run the full suite command once.
     5. Report results in the format below. Do NOT fix failures.
 
     ## Report Format
 
     Status: PASS | FAIL | BLOCKED
 
-    E2E Results:
-      - scenario: "[scenario name from scenarios list]"
-        status: PASS | FAIL
-        failure_detail: |  # omit if PASS
-          [What user action failed. What was expected vs actual.
-           Which test file and line, if available.
-           Enough detail for the implementer to know which flow broke
-           and where to start debugging.]
+    matrix_results:
+      J1:
+        happy_path:       { status: PASS }
+        negative_path:
+          status: FAIL
+          assertion_shape: "[echoed from matrix cell]"
+          failure_detail: |
+            [What failed. What was expected vs actual. Test file and line if available.
+             Enough detail for the implementer to locate the broken property.]
+        state_persistence: { status: PASS }
+        feature_interaction: { status: PASS }
+        auth_boundary:
+          status: NA
+          justification: "[echoed verbatim from matrix cell]"
+      J2: ...
 
-    Full Suite:
+    full_suite:
       status: PASS | FAIL
       summary: "[X/Y tests passed]"
       failures:  # omit if PASS
         - file: "[test file path]"
           test: "[test name]"
           error: "[error message]"
+
+    overall: PASS | FAIL
+
+    **Overall verdict rule:**
+    - PASS iff every `scenario` cell is PASS, every `na` cell has a non-empty justification echoed, and full_suite is PASS.
+    - FAIL iff any `scenario` cell is FAIL, any `na` cell has empty justification, or full_suite is FAIL.
 
     If BLOCKED — use this format instead:
     Status: BLOCKED
