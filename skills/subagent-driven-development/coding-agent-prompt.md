@@ -87,37 +87,70 @@ Task tool (general-purpose):
 
     ## If Producing a Solution ITC
 
-    When dispatched for solution-level ITC negotiation (after all tasks complete),
-    scan the actual implementation first, then use this YAML format instead:
+    When dispatched for solution-level ITC negotiation (after all tasks complete):
+
+    **Required inputs** (all three must be loaded before drafting):
+    1. The project's `<topic>-journeys.yaml` — pasted in full at the end of this prompt.
+    2. `skills/subagent-driven-development/testing-strategies.md` — pasted in full at the end of this prompt.
+    3. The actual implementation — scan the codebase for entry points, protected routes, and test files.
+
+    Your output is a **coverage matrix**: rows are journey IDs from journeys.yaml, columns are strategy IDs from testing-strategies.md. Every cell MUST be either a `scenario` (with `command` and `assertion_shape`) or an `na` with a non-empty justification string. Do NOT invent strategy IDs — use the canonical IDs from the playbook verbatim.
+
+    Use this YAML format:
 
     ```yaml
     solution: "[feature or project name]"
-    tasks_covered: [1, 2, 3]  # list all completed task IDs
+    tasks_covered: [1, 2, 3]
 
     implementation_summary:
       entry_points:
         - "[HTTP method] [route or component path]"
-      protected_routes:  # omit if not applicable
+      protected_routes:
         - "[HTTP method] [route]"
 
     test_contract:
       tiers_required: [e2e, full_suite]
-      rationale: "[one sentence: all tasks complete, verify full user journey end-to-end]"
+      rationale: "[one sentence: all tasks complete, verify full user journey end-to-end via coverage matrix]"
 
       e2e:
-        commands:
-          - "[exact E2E command — e.g., npx playwright test tests/e2e/feature.spec.ts]"
-        scenarios:
-          - "[user flow to verify — e.g., 'user login and session persistence']"
         required_services:
           - "[what must be running — e.g., 'backend API on port 3001', 'database seeded', 'frontend built']"
+
+        coverage_matrix:
+          J1:
+            happy_path:
+              scenario:
+                command: "[exact runnable command — e.g., npx playwright test tests/e2e/flow.spec.ts --grep @J1-happy]"
+                assertion_shape: "[concrete deep property — not just HTTP 200 or element visible]"
+            negative_path:
+              scenario:
+                command: "..."
+                assertion_shape: "..."
+            state_persistence:
+              scenario:
+                command: "..."
+                assertion_shape: "..."
+            feature_interaction:
+              scenario:
+                command: "..."
+                assertion_shape: "..."
+            auth_boundary:
+              scenario:
+                command: "..."
+                assertion_shape: "..."
+          J2:
+            happy_path:    { scenario: { command: "...", assertion_shape: "..." } }
+            negative_path: { scenario: { command: "...", assertion_shape: "..." } }
+            state_persistence: { na: "Journey is a single atomic request with no multi-step state to persist." }
+            feature_interaction: { scenario: { command: "...", assertion_shape: "..." } }
+            auth_boundary: { na: "Journey is fully public; no authentication or user-scoped data." }
 
       full_suite:
         command: "[exact command to run full test suite — e.g., npm test]"
         rationale: "Catch any cross-task regression not visible in individual task ITCs"
 
     acceptance_criteria:
-      e2e: all scenarios pass
+      e2e: every scenario cell PASS; every na cell has non-empty justification
       full_suite: all pass
       no_regression: true
 
@@ -125,6 +158,21 @@ Task tool (general-purpose):
       coding_agent: ✅
       testing_agent: (pending)
     ```
+
+    **Rules for the matrix**
+    - Every journey in journeys.yaml MUST be a row.
+    - Every strategy ID in testing-strategies.md MUST be a column for every row.
+    - Every cell = `scenario` or `na`. No empty cells.
+    - `assertion_shape` is required prose; shallow shapes ("returns 200", "element visible" alone) will be rejected by the testing-agent.
+    - `na` justification must cite a legitimate reason: structurally inapplicable, covered by another cell, or explicitly deferred. Lazy na ("too hard", "not critical", one-word) will be rejected.
+
+    ## Journeys.yaml (paste in full)
+
+    [Dispatcher: paste the full contents of `docs/superpowers/specs/<date>-<topic>-journeys.yaml` here]
+
+    ## Testing Strategies Playbook (paste in full)
+
+    [Dispatcher: paste the full contents of `skills/subagent-driven-development/testing-strategies.md` here]
 
     End your response with ✅ to confirm you have produced your proposal.
 ```
