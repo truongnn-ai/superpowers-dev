@@ -2,11 +2,18 @@
 
 The 4 flows you'll use every day. Each one starts with you describing the task — the agent handles the rest.
 
+> **Triggering skills:** Each flow below starts with a natural language prompt — the agent detects the right skill automatically. To guarantee a specific skill fires, name it explicitly in your prompt:
+> - *"use the brainstorming skill"* — or — *"use superpowers:brainstorming"*
+>
+> Use explicit invocation when the agent doesn't auto-detect the right skill from context, or when you want to jump straight to a specific step.
+
 ---
 
 ## 1. Building a new feature
 
-**Start with:** "I want to build / add / implement X"
+**Natural prompt:** *"I want to build / add / implement X"*
+
+**Explicit invocation:** *"use superpowers:brainstorming — I want to add a search filter to the product listing page"*
 
 ```
 brainstorming       ← agent asks questions, you answer
@@ -26,7 +33,9 @@ finishing-a-development-branch ← agent asks: merge, PR, or keep for now?
 
 ## 2. Fixing a bug
 
-**Start with:** "There's a bug where X happens when Y" or "This test is failing"
+**Natural prompt:** *"There's a bug where X happens when Y"* or *"This test is failing"*
+
+**Explicit invocation:** *"use superpowers:systematic-debugging — the login form throws a 500 when the email contains a plus sign"*
 
 ```
 systematic-debugging        ← agent investigates root cause before touching code
@@ -46,7 +55,9 @@ finishing-a-development-branch ← PR or merge
 
 ## 3. Code review
 
-**Start with:** "Review this PR" or "Review what I just implemented"
+**Natural prompt:** *"Review this PR"* or *"Review what I just implemented"*
+
+**Explicit invocation:** *"use superpowers:requesting-code-review — review commits abc123..HEAD against the plan in docs/plans/my-plan.md"*
 
 ```
 requesting-code-review  ← agent dispatches a reviewer with full context
@@ -62,7 +73,9 @@ receiving-code-review   ← agent evaluates feedback, implements or pushes back 
 
 ## 4. Finishing a branch
 
-**Start with:** "I'm done, let's wrap this up" or "Ready to merge"
+**Natural prompt:** *"I'm done, let's wrap this up"* or *"Ready to merge"*
+
+**Explicit invocation:** *"use superpowers:finishing-a-development-branch"*
 
 ```
 verification-before-completion ← runs tests, confirms everything passes
