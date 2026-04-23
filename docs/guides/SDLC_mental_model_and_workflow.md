@@ -238,24 +238,12 @@ When production is on fire:
 
 ---                 
                                                     
-Summary matrix
-                                                                        
-┌────────────────────┬────────┬────────────┬─────────┬───────────────┐  
-│      Workflow      │ Speed  │   Risk     │ Human   │   Typical     │    
-│                    │        │ tolerance  │  load   │    driver     │
-├────────────────────┼────────┼────────────┼─────────┼───────────────┤    
-│ 2.1.1 Human-guided │ Medium │ Low        │ High    │ Senior dev /  │  
-│  Greenfield        │        │            │         │ architect     │
-├────────────────────┼────────┼────────────┼─────────┼───────────────┤
-│ 2.1.2 Autonomous   │ High   │ High       │ Low     │ PM / business │
-│ Greenfield         │        │ (scoped)   │         │  user / dev   │    
-├────────────────────┼────────┼────────────┼─────────┼───────────────┤
-│ 2.2.1 Brownfield   │ Medium │ Varies by  │ Medium  │ Any dev       │    
-│ feature/bugfix     │        │ tier       │         │               │    
-├────────────────────┼────────┼────────────┼─────────┼───────────────┤
-│ 2.2.2 Brownfield   │ Slow   │ Low        │ High    │ Senior dev    │    
-│ refactor           │        │            │         │               │  
-├────────────────────┼────────┼────────────┼─────────┼───────────────┤
-│ 2.2.3 Incident     │ Fast   │ Low        │ High    │ Oncall        │
-│ response           │        │            │         │               │    
-└────────────────────┴────────┴────────────┴─────────┴───────────────┘
+## Summary Matrix
+
+| Workflow                         | Speed  | Risk tolerance   | Human load | Typical driver            |
+|----------------------------------|--------|------------------|------------|---------------------------|
+| 2.1.1 Human-guided Greenfield    | Medium | Low              | High       | Senior dev / architect    |
+| 2.1.2 Autonomous Greenfield      | High   | High (scoped)    | Low        | PM / business user / dev  |
+| 2.2.1 Brownfield feature/bugfix  | Medium | Varies by tier   | Medium     | Any dev                   |
+| 2.2.2 Brownfield refactor        | Slow   | Low              | High       | Senior dev                |
+| 2.2.3 Incident response          | Fast   | Low              | High       | Oncall                    |
