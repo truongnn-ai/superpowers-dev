@@ -60,6 +60,19 @@ This structure informs the task decomposition. Each task should produce self-con
 ---
 ```
 
+**If the spec has a companion `<topic>-journeys.yaml`, include a `## Journeys (reference)` section immediately after the header:**
+
+```markdown
+## Journeys (reference)
+
+- J1 — <name from journeys.yaml>
+- J2 — <name from journeys.yaml>
+
+(Full detail lives in `docs/superpowers/specs/<date>-<topic>-journeys.yaml`.)
+```
+
+This is a compact readability hint for plan readers — do not duplicate full journey content here.
+
 ## Task Structure
 
 ````markdown
@@ -69,6 +82,8 @@ This structure informs the task decomposition. Each task should produce self-con
 - Create: `exact/path/to/file.py`
 - Modify: `exact/path/to/existing.py:123-145`
 - Test: `tests/exact/path/to/test.py`
+
+**Contributes to:** [J1, J3]   <!-- optional: include only when this task clearly implements journeys from journeys.yaml; omit if unclear -->
 
 - [ ] **Step 1: Write the failing test**
 

@@ -26,10 +26,11 @@ You MUST create a task for each of these items and complete them in order:
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
-6. **Write design doc** — save to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` and commit
-7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+6. **Journey enumeration** — produce a draft `<topic>-journeys.yaml` (schema in `docs/superpowers/specs/2026-04-20-e2e-coverage-matrix-design.md` §4), present journeys with priorities to the user, and obtain approval. See the Journey Enumeration section below.
+7. **Write design doc and `<topic>-journeys.yaml`** — save both to `docs/superpowers/specs/YYYY-MM-DD-<topic>-*` and commit in a single commit
+8. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope, and journey-completeness (see below)
+9. **User reviews written spec** — ask user to review the spec file and journeys.yaml before proceeding
+10. **Transition to implementation** — invoke writing-plans skill to create implementation plan
 
 ## Process Flow
 
@@ -55,7 +56,12 @@ digraph brainstorming {
     "Propose 2-3 approaches" -> "Present design sections";
     "Present design sections" -> "User approves design?";
     "User approves design?" -> "Present design sections" [label="no, revise"];
-    "User approves design?" -> "Write design doc" [label="yes"];
+    "User approves design?" -> "Journey enumeration" [label="yes"];
+    "Journey enumeration" [shape=box];
+    "User approves journeys?" [shape=diamond];
+    "Journey enumeration" -> "User approves journeys?";
+    "User approves journeys?" -> "Journey enumeration" [label="no, revise"];
+    "User approves journeys?" -> "Write design doc" [label="yes"];
     "Write design doc" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
@@ -104,14 +110,42 @@ digraph brainstorming {
 - Where existing code has problems that affect the work (e.g., a file that's grown too large, unclear boundaries, tangled responsibilities), include targeted improvements as part of the design - the way a good developer improves code they're working in.
 - Don't propose unrelated refactoring. Stay focused on what serves the current goal.
 
+## Journey Enumeration
+
+After the design is approved and before writing the spec, walk the PRD and the design's feature list to enumerate the end-to-end flows a user takes across the features. Each journey is a first-class artifact — it will drive the solution-level coverage matrix at implementation time (see `docs/superpowers/specs/2026-04-20-e2e-coverage-matrix-design.md`).
+
+**Produce** a `<topic>-journeys.yaml` draft using this schema:
+
+```yaml
+journeys:
+  - id: J1
+    name: "<short human-readable flow name>"
+    persona: "<who is taking the journey and any relevant attribute>"
+    preconditions: "<system state before the journey begins>"
+    steps:
+      - "<ordered action>"
+      - "<ordered action>"
+    expected_outcome: "<concrete end state — DB, UI, side effects>"
+    feature_interactions: [<tags drawn from the design's feature list>]
+    priority: P0   # P0 must-cover | P1 should-cover | P2 nice-to-have
+```
+
+**Present** the journeys to the user with priorities and obtain approval using the same gate pattern as the rest of the design.
+
+**Rules**
+- `feature_interactions` tags MUST come from the design's declared feature list; do not invent tags.
+- Each P0 journey MUST have specific steps and a concrete `expected_outcome`.
+- No journey should be so vague that a strategy cell (see testing-strategies playbook) would be unwriteable.
+
 ## After the Design
 
 **Documentation:**
 
 - Write the validated design (spec) to `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`
-  - (User preferences for spec location override this default)
+- Write the approved journeys to `docs/superpowers/specs/YYYY-MM-DD-<topic>-journeys.yaml`
+  - (User preferences for spec location override these defaults)
 - Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+- Commit both files to git in a single commit
 
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
@@ -120,13 +154,14 @@ After writing the spec document, look at it with fresh eyes:
 2. **Internal consistency:** Do any sections contradict each other? Does the architecture match the feature descriptions?
 3. **Scope check:** Is this focused enough for a single implementation plan, or does it need decomposition?
 4. **Ambiguity check:** Could any requirement be interpreted two different ways? If so, pick one and make it explicit.
+5. **Journey completeness:** Every P0 journey has non-trivial steps and a specific `expected_outcome`. `feature_interactions` tags are drawn from the design's declared feature list (no invented tags). No journey is so vague that a strategy cell (journey-completeness) would be unwriteable.
 
 Fix any issues inline. No need to re-review — just fix and move on.
 
 **User Review Gate:**
 After the spec review loop passes, ask the user to review the written spec before proceeding:
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written and committed to `<spec-path>` and `<journeys-path>`. Please review both and let me know if you want to make any changes before we start writing out the implementation plan."
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
