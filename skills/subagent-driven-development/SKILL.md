@@ -132,6 +132,64 @@ digraph process {
 }
 ```
 
+## Tier-Aware Dispatch
+
+Each task in a plan carries an inline YAML `tier` block (see `skills/writing-plans/SKILL.md` and `skills/writing-plans/tier-rubric.md`). The orchestrator MUST read the tier per task and run only the gates that tier requires.
+
+### Reading the tier
+
+For each task, parse the YAML block immediately following the task header:
+
+```yaml
+tier: <trivial | standard | heavy>
+tier_reason: "<rubric clause id and explanation>"
+```
+
+**fail-safe rules — when in doubt, treat the task as `heavy`:**
+- No tier block present → treat as `heavy`. Log a warning naming the task.
+- YAML parse error → treat as `heavy`. Log a warning with the parse error and task id.
+- `tier` value is not one of `trivial | standard | heavy` → treat as `heavy`. Log a warning naming the task and the unknown value.
+- The user may hand-edit `tier` in `plan.md`; the orchestrator trusts the file as the source of truth at execution time and does NOT re-validate against the rubric.
+
+### Per-tier flows
+
+The flows below replace the per-task block of the main process flowchart for every task. The flowchart's solution-level negotiation, E2E + full-suite test-runner, and final code reviewer (after all tasks complete) are unchanged.
+
+### Trivial flow
+
+1. Dispatch implementer subagent (`./implementer-prompt.md`) with task spec + scene-setting context.
+2. Handle implementer status (`DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, `NEEDS_CONTEXT`, `ESCALATE`) per the existing `## Handling Implementer Status` and `## Escalation Handling` rules.
+3. On `DONE`: mark task complete in TodoWrite. Skip ITC negotiation, spec-reviewer, code-reviewer, and test-runner — none apply at trivial.
+
+### Standard flow
+
+1. Dispatch implementer subagent (`./implementer-prompt.md`).
+2. On `DONE`: dispatch code quality reviewer subagent (`./code-quality-reviewer-prompt.md`).
+3. On reviewer ✅: dispatch unit test-runner (`./test-runner-task-prompt.md`) restricted to existing tests (do not require new tests for the change).
+4. On test-runner `PASS`: mark task complete.
+5. Skip ITC negotiation and spec-reviewer — neither applies at standard.
+
+### Heavy flow
+
+Run the full per-task block exactly as the main process flowchart describes:
+
+1. ITC negotiation (coding-agent ↔ testing-agent, up to 5 rounds, write contract file).
+2. Implementer subagent.
+3. Spec-reviewer subagent.
+4. Code quality reviewer subagent.
+5. Unit test-runner; integration test-runner if `tiers_required` includes `integration`.
+
+### Dispatch decision (pseudocode)
+
+```
+for task in plan.tasks:
+    tier = parse_tier_block(task) or "heavy"   # fail-safe
+    match tier:
+        case "trivial": run_trivial_flow(task)
+        case "standard": run_standard_flow(task)
+        case "heavy":    run_heavy_flow(task)
+```
+
 ## ITC Negotiation
 
 Before implementing each task, two agents negotiate an Implementation-Testing Contract (ITC): what will be built and how it will be verified at runtime.
