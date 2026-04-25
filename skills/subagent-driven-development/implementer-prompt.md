@@ -71,6 +71,53 @@ Task tool (general-purpose):
     The controller can provide more context, re-dispatch with a more capable model,
     or break the task into smaller pieces.
 
+    ## Tier Escalation (`<ESCALATE>`)
+
+    Each task is dispatched at a tier (`trivial`, `standard`, or `heavy`). If the
+    task description and acceptance criteria turn out to require gates the
+    current tier doesn't run, **halt before committing any code** and signal
+    escalation. Escalations never ship partial work.
+
+    **When to escalate:**
+    - You're at `trivial` and the task requires adding a code file, changing
+      behavior, or adding tests.
+    - You're at `standard` and the task requires a new public API, new
+      behavior, or contract change at a module boundary.
+    - You're at `heavy` — escalation is not available; report `BLOCKED` instead.
+
+    **What "halt before committing" means:**
+    - Do not run `git commit`.
+    - Discard any uncommitted edits in your worktree (e.g., via `git restore .`
+      or `git stash drop` after `git stash`). The re-dispatched run starts fresh.
+
+    **Escalation report format** — return this YAML block as the FIRST content of
+    your reply (before any other text):
+
+    ```
+    <ESCALATE>
+    task_id: T<N>                    # task id from the plan
+    current_tier: trivial            # the tier you were dispatched at
+    requested_tier: standard         # MUST be strictly higher than current_tier
+    reason: >
+      One-paragraph explanation: what about the task requires a higher tier?
+    rubric_clause_violated: "trivial: no new files of code (T2)"
+    evidence:
+      - "Concrete observation 1 (e.g., 'AC 3 requires new file scripts/foo.sh')"
+      - "Concrete observation 2 (optional)"
+    attempted_before_halt: false     # true if any code was written then discarded
+    </ESCALATE>
+    ```
+
+    **Escalation rules:**
+    - `requested_tier` MUST be strictly higher than `current_tier` (one-way only).
+    - You may escalate at most ONCE per task; the orchestrator enforces this.
+    - `heavy` cannot escalate. If you're stuck at `heavy`, report `BLOCKED`.
+
+    **Escalate vs. BLOCKED:**
+    - **Escalate** — task is well-specified but its assigned tier is too light.
+    - **BLOCKED** — task itself is unclear, contradictory, requires architectural
+      decisions, or you cannot proceed regardless of tier.
+
     ## Before Reporting Back: Self-Review
 
     Review your work with fresh eyes. Ask yourself:
@@ -100,7 +147,7 @@ Task tool (general-purpose):
     ## Report Format
 
     When done, report:
-    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT | ESCALATE
     - What you implemented (or what you attempted, if blocked)
     - What you tested and test results
     - Files changed
@@ -109,5 +156,5 @@ Task tool (general-purpose):
 
     Use DONE_WITH_CONCERNS if you completed the work but have doubts about correctness.
     Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT if you need
-    information that wasn't provided. Never silently produce work you're unsure about.
+    information that wasn't provided. Use ESCALATE (with the structured `<ESCALATE>` block defined above) when the task requires gates a higher tier provides. Never silently produce work you're unsure about.
 ```
