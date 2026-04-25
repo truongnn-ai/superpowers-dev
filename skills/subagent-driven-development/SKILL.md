@@ -190,6 +190,61 @@ for task in plan.tasks:
         case "heavy":    run_heavy_flow(task)
 ```
 
+## Escalation Handling
+
+Implementer subagents may exit with `ESCALATE` (see `./implementer-prompt.md`). The escalation contract: implementer halts before committing, discards any partial work, and returns a structured `<ESCALATE>` block as the first content of its reply.
+
+### Detecting an escalation
+
+After the implementer returns, check whether the reply begins with `<ESCALATE>`:
+
+- If yes → handle per this section. Do NOT run any further gates for this dispatch attempt.
+- If no → process the reply per `## Handling Implementer Status` (DONE, DONE_WITH_CONCERNS, BLOCKED, NEEDS_CONTEXT).
+
+### Validating the escalation
+
+Parse the YAML inside the `<ESCALATE>` block. Reject the escalation (and halt the plan with a clear user message) if any of the following is true:
+
+- `requested_tier` is not strictly higher than `current_tier` (one-way only — never demote).
+- `current_tier` is `heavy` (heavy is the top tier; nothing higher exists).
+- The task's `escalation_count` is already `1` (per-task cap reached).
+
+When rejecting because `current_tier` is `heavy` or because the cap is reached, surface a user-facing message naming the task id and the reason, then halt.
+
+### Re-dispatching at the new tier
+
+If validation passes:
+
+1. Update `plan.md` for the task (audit trail):
+   - `tier` ← `requested_tier`
+   - `tier_reason` ← `"escalated from <current_tier>: <reason>"`
+   - `escalation_count` ← previous + 1 (start at 0; absent treated as 0)
+2. Append the escalation note (full `<ESCALATE>` payload) to the in-memory escalation ledger for the run.
+3. **fresh re-dispatch at the new tier — same call as a first dispatch.** Do NOT inject the escalation note into the new flow's prompt. The task description in `plan.md` is the source of truth; the escalation note is audit-only.
+
+### End-of-run escalation ledger
+
+After the last task in the plan completes (or the plan halts), append the ledger to `plan.md` if any escalations occurred:
+
+```markdown
+## Escalations (<count>)
+
+- T<id>: <original_tier> → <new_tier>. Reason: <reason>. Rubric clause violated: <clause id>.
+- T<id>: <original_tier> → <new_tier>. Reason: <reason>. Rubric clause violated: <clause id>.
+```
+
+If no escalations occurred during the run, do not append the section.
+
+### Caps and guardrails
+
+| Rule | Value |
+|---|---|
+| Max escalations per task | 1 (orchestrator enforces) |
+| Plan-wide escalation budget | none (per-task cap is the only cap) |
+| `heavy` may not escalate | enforced — heavy escalation halts the plan |
+| Demotion at runtime | forbidden — escalation is one-way only |
+| Partial work on escalate | discarded by implementer; orchestrator does NOT inject the escalation note into the re-dispatched prompt |
+
 ## ITC Negotiation
 
 Before implementing each task, two agents negotiate an Implementation-Testing Contract (ITC): what will be built and how it will be verified at runtime.
@@ -266,7 +321,7 @@ Use the least powerful model that can handle each role to conserve cost and incr
 
 ## Handling Implementer Status
 
-Implementer subagents report one of four statuses. Handle each appropriately:
+Implementer subagents report one of five statuses. Handle each appropriately:
 
 **DONE:** Proceed to spec compliance review.
 
@@ -279,6 +334,8 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 2. If the task requires more reasoning, re-dispatch with a more capable model
 3. If the task is too large, break it into smaller pieces
 4. If the plan itself is wrong, escalate to the human
+
+**ESCALATE:** The implementer's reply begins with an `<ESCALATE>` YAML block. Process per `## Escalation Handling`. Do NOT proceed to spec or quality review for this dispatch attempt.
 
 **Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
 
@@ -549,6 +606,8 @@ Done!
 - Proceed past FAIL test-runner without re-running harness after implementer fix
 - Run integration test-runner before unit tests PASS
 - Forget to write and commit the ITC file to docs/superpowers/contracts/ after negotiation
+- Inject the implementer's escalation note into the re-dispatched flow's prompt — escalation notes are audit-only; the next agent reads the task description, not the note
+- Demote a task's tier at runtime — escalation is one-way only
 
 **If subagent asks questions:**
 - Answer clearly and completely
