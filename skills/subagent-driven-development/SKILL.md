@@ -5,11 +5,11 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute plan by negotiating an ITC per task, dispatching a fresh implementer subagent, running two-stage review (spec then quality), and verifying with a runtime test harness before marking tasks complete.
+Execute plan by negotiating an ITC (Implementation-Testing Contract) per task, dispatching a fresh implementer subagent, running two-stage review (spec then quality), and verifying with a runtime test harness before marking tasks complete.
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-**Core principle:** ITC negotiation before each task + fresh implementer + two-stage review + runtime test harness = verifiable, high-quality iteration
+**Core principle:** ITC (Implementation-Testing Contract) negotiation before each task + fresh implementer + two-stage review + runtime test harness = verifiable, high-quality iteration
 
 ## When to Use
 
