@@ -255,16 +255,16 @@ Before implementing each task, two agents negotiate an Implementation-Testing Co
 
 ```
 Round 1: coding-agent(task spec + codebase context) → draft ITC
-Round 2: testing-agent(task spec + draft ITC)
+Round 2: testing-agent(task spec + Round 1 draft ITC)
   → signs ✅: contract locked → write to docs/superpowers/contracts/YYYY-MM-DDTHH-MM-SS-task_itc_N.md and commit
   → lists amendments: proceed to Round 3
-Round 3: coding-agent(task spec + testing-agent amendments)
+Round 3: coding-agent(task spec + own Round 1 draft ITC + testing-agent Round 2 amendments)
   → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
   → disputes with reasoning: proceed to Round 4
-Round 4: testing-agent(task spec + coding-agent's Round 3 position)
+Round 4: testing-agent(task spec + own Round 2 amendments + coding-agent Round 3 response)
   → signs ✅: contract locked
   → lists amendments: proceed to Round 5
-Round 5: coding-agent(task spec + testing-agent's Round 4 amendments) — final round
+Round 5: coding-agent(task spec + own Round 3 response + testing-agent Round 4 amendments) — final round
   → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
   → still disputes: escalate to user before proceeding
 ```

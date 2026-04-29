@@ -6,6 +6,9 @@ Use this template when dispatching the testing agent for ITC negotiation.
 
 **Dispatch for Round 2 (after coding-agent Round 1 draft) or Round 4 (after coding-agent Round 3 response). Do not dispatch for Round 5 — that is a coding-agent turn.**
 
+- Round 2 context bundle: task spec + coding-agent Round 1 draft ITC
+- Round 4 context bundle: task spec + own Round 2 amendments + coding-agent Round 3 response
+
 ```
 Task tool (general-purpose):
   description: "ITC Negotiation Round [2|4] - Testing Agent: Task [N]"
@@ -18,9 +21,16 @@ Task tool (general-purpose):
 
     [FULL TEXT of task from plan — paste here]
 
-    ## Coding Agent's Draft ITC
+    ## Coding Agent's Most Recent Position
 
-    [Full ITC YAML from the coding agent's response — paste here]
+    [Dispatcher: paste the coding agent's most recent ITC response verbatim.
+    - Round 2 dispatch: this is the Round 1 draft ITC.
+    - Round 4 dispatch: this is the Round 3 response (which may accept some amendments and dispute others).]
+
+    ## Your Prior Amendments (Round 4 only — omit on Round 2)
+
+    [Dispatcher: paste this agent's own Round 2 amendments verbatim.
+    This is what the coding agent's Round 3 response is replying to. Use it to evaluate whether each amendment was addressed, conceded, or unresolved — and whether the coding agent's counter-arguments warrant softening or holding firm.]
 
     ## Your Job
 
