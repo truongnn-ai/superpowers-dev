@@ -174,8 +174,8 @@ The flows below replace the per-task block of the main process flowchart for eve
 Run the full per-task block exactly as the main process flowchart describes:
 
 1. ITC negotiation (coding-agent ↔ testing-agent, up to 5 rounds, write contract file).
-2. Implementer subagent.
-3. Spec-reviewer subagent.
+2. Dispatch implementer subagent (`./implementer-prompt.md`) with: task spec + full ITC (Implementation-Testing Contract) (paste complete contract file contents inline — all fields) + scene-setting context.
+3. Dispatch spec-reviewer subagent (`./spec-reviewer-prompt.md`) with: task spec + full ITC (Implementation-Testing Contract) (paste complete contract file contents inline — all fields) + implementer report.
 4. Code quality reviewer subagent.
 5. Unit test-runner; integration test-runner if `tiers_required` includes `integration`.
 
@@ -256,7 +256,7 @@ Before implementing each task, two agents negotiate an Implementation-Testing Co
 ```
 Round 1: coding-agent(task spec + codebase context) → draft ITC
 Round 2: testing-agent(task spec + Round 1 draft ITC)
-  → signs ✅: contract locked → write to docs/superpowers/contracts/YYYY-MM-DDTHH-MM-SS-task_itc_N.md and commit
+  → signs ✅: contract locked → write to docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/YYYY-MM-DDTHH-MM-SS-task_itc_N.md and commit
   → lists amendments: proceed to Round 3
 Round 3: coding-agent(task spec + own Round 1 draft ITC + testing-agent Round 2 amendments)
   → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
@@ -271,8 +271,16 @@ Round 5: coding-agent(task spec + own Round 3 response + testing-agent Round 4 a
 
 ### Contract File Naming
 
-`YYYY-MM-DDTHH-MM-SS-task_itc_N.md` for per-task ITCs.
-`YYYY-MM-DDTHH-MM-SS-solution_itc.md` for the solution ITC.
+All contracts for a plan live in a feature sub-folder:
+`docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/`
+
+- `YYYY-MM-DD` = plan start date; `feature-name` = kebab-case slug of the feature
+- Sub-folder is created when the first contract for the plan is written
+- All task ITCs and the solution ITC for the same plan go into the same sub-folder
+
+File names inside the sub-folder:
+- `YYYY-MM-DDTHH-MM-SS-task_itc_N.md` for per-task ITCs
+- `YYYY-MM-DDTHH-MM-SS-solution_itc.md` for the solution ITC
 
 ISO 8601 format with colons replaced by hyphens (filesystem-safe). Lexicographic order = chronological order. Old contracts are never deleted — git history is the audit trail.
 
@@ -344,7 +352,7 @@ Implementer subagents report one of five statuses. Handle each appropriately:
 Test-runner subagents report one of three statuses: PASS | FAIL | BLOCKED
 
 **PASS:** All commands exited 0 and acceptance criteria are met.
-- Unit PASS → read `tiers_required` from the task ITC file in `docs/superpowers/contracts/`: if `[unit, integration]`, dispatch integration test-runner; if `[unit]` only, mark task complete
+- Unit PASS → read `tiers_required` from the task ITC file in `docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/`: if `[unit, integration]`, dispatch integration test-runner; if `[unit]` only, mark task complete
 - Integration PASS → mark task complete
 - E2E + full suite PASS → proceed to final code review
 
@@ -407,7 +415,7 @@ Coding agent: Proposes test_contract with tiers_required: [unit], 2 test command
 Testing agent: ✅ Spec compliant — commands target specific files, must_cover includes
                idempotent install and --force flag behavior.
 
-[Write docs/superpowers/contracts/2026-04-14T14-30-00-task_itc_1.md and commit]
+[Write docs/superpowers/contracts/2026-04-14-hook-installation/2026-04-14T14-30-00-task_itc_1.md and commit]
 
 [Dispatch implementation subagent with full task text + context + ITC path]
 
@@ -452,7 +460,7 @@ Coding agent: Proposes tiers_required: [unit, integration].
 [Dispatch testing-agent ITC Round 2 — task spec + coding agent's draft]
 Testing agent: ✅ Approved — commands target specific files, required_services lists the test DB.
 
-[Write docs/superpowers/contracts/2026-04-14T14-32-00-task_itc_2.md and commit]
+[Write docs/superpowers/contracts/2026-04-14-hook-installation/2026-04-14T14-32-00-task_itc_2.md and commit]
 
 [Dispatch implementation subagent with full task text + context + ITC path]
 
@@ -520,7 +528,7 @@ Testing agent: ✅ Approved — matrix complete, no shallow assertion_shapes, na
 
 [Post-negotiation gate: verify matrix has row per journey × column per strategy, no empty cells]
 
-[Write docs/superpowers/contracts/2026-04-20T16-00-00-solution_itc.md and commit]
+[Write docs/superpowers/contracts/2026-04-14-hook-installation/2026-04-20T16-00-00-solution_itc.md and commit]
 
 [Dispatch E2E + full suite test-runner — coverage_matrix + full_suite command]
 Test runner:
@@ -605,7 +613,7 @@ Done!
 - Attempt to set env vars or configure external services autonomously — escalate to user for those
 - Proceed past FAIL test-runner without re-running harness after implementer fix
 - Run integration test-runner before unit tests PASS
-- Forget to write and commit the ITC file to docs/superpowers/contracts/ after negotiation
+- Forget to write and commit the ITC file to docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/ after negotiation
 - Inject the implementer's escalation note into the re-dispatched flow's prompt — escalation notes are audit-only; the next agent reads the task description, not the note
 - Demote a task's tier at runtime — escalation is one-way only
 

@@ -12,6 +12,13 @@ Task tool (general-purpose):
 
     [FULL TEXT of task from plan - paste it here, don't make subagent read file]
 
+    ## Signed ITC (Implementation-Testing Contract)
+
+    [PASTE COMPLETE ITC (Implementation-Testing Contract) YAML here — copy the full contents of
+    the contract file verbatim, including: task_id, task_name, implementation_scope,
+    test_contract (all tiers), acceptance_criteria, and sign_off. Do NOT excerpt — the
+    implementer needs all fields.]
+
     ## Context
 
     [Scene-setting: where this fits, dependencies, architectural context]
@@ -141,6 +148,8 @@ Task tool (general-purpose):
     - Do tests actually verify behavior (not just mock behavior)?
     - Did I follow TDD if required?
     - Are tests comprehensive?
+    - Does my implementation match every component listed in `implementation_scope.components`?
+    - Do my tests exactly match the commands and `must_cover` items in the ITC (Implementation-Testing Contract) `test_contract`?
 
     If you find issues during self-review, fix them now before reporting.
 
