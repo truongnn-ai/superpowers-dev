@@ -1,9 +1,9 @@
 {
-  "name": "superpowers-dev",
+  "name": "superpowers-marketplace-dev",
   "description": "Development marketplace for Superpowers core skills library",
   "owner": {
-    "name": "Jesse Vincent",
-    "email": "jesse@fsck.com"
+    "name": "Codelink AI",
+    "email": "hello@codelinks.io"
   },
   "plugins": [
     {
@@ -12,8 +12,8 @@
       "version": "5.0.6",
       "source": "./",
       "author": {
-        "name": "Jesse Vincent",
-        "email": "jesse@fsck.com"
+        "name": "Codelink AI",
+        "email": "hello@codelinks.io"
       }
     }
   ]
