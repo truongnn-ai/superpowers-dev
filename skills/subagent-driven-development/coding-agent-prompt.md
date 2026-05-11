@@ -7,7 +7,11 @@ Use this template when dispatching the coding agent for ITC negotiation.
 **Rounds:**
 - Round 1: coding-agent proposes draft ITC (no prior context from testing agent)
 - Round 3: coding-agent responds to testing-agent Round 2 amendments
+  → context bundle: task spec + own Round 1 draft ITC + testing-agent Round 2 amendments
 - Round 5 (if needed): coding-agent final response to testing-agent Round 4 amendments
+  → context bundle: task spec + own Round 3 response + testing-agent Round 4 amendments
+  (Round 1 is intentionally omitted — Round 3 already supersedes it as the coding-agent's
+   most recent self-authored position.)
 
 ```
 Task tool (general-purpose):
@@ -21,6 +25,13 @@ Task tool (general-purpose):
 
     [FULL TEXT of task from plan — paste here, do not reference a file]
 
+    ### Journey Context (omit if task has no `Contributes to:` or no journeys.yaml exists)
+
+    [Dispatcher: paste the YAML objects for each journey ID in the task's `Contributes to:` field —
+    only the referenced IDs, not the full file. These are the user flows this task enables.
+    Use `steps` and `expected_outcome` to drive `must_cover` items; use `preconditions` to
+    inform `required_services`. Cite the journey ID in each `must_cover` item.]
+
     ## Existing Codebase Context
 
     [Scan the codebase before filling this in. Include:
@@ -28,6 +39,14 @@ Task tool (general-purpose):
     - Established patterns and conventions to follow
     - Known interfaces or types this code will use
     Omit entirely if this is a new project with no existing code.]
+
+    ## Your Prior Position (Rounds 3 and 5 — omit entirely on Round 1)
+
+    [Dispatcher: paste this agent's most recent self-authored prior round verbatim.
+    - For Round 3 dispatch: paste the Round 1 draft ITC YAML.
+    - For Round 5 dispatch: paste the Round 3 response (do NOT paste Round 1 — Round 3 already supersedes it).
+    This is your own prior reasoning — refer to it when accepting or disputing the testing agent's amendments.
+    Do not silently re-litigate items you already conceded; do not silently abandon items you previously defended without addressing the testing agent's counter-argument.]
 
     ## Testing Agent's Amendments (Rounds 3 and 5 — omit entirely on Round 1)
 

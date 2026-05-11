@@ -4,7 +4,7 @@ Superpowers is a Claude Code plugin that gives your AI agent a structured workfl
 
 **Install:**
 ```bash
-/plugin install superpowers@claude-plugins-official
+claude plugin install superpowers@claude-plugins-official
 ```
 
 Then start a new Claude Code session. Skills trigger automatically — you don't need to invoke them manually.

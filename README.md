@@ -15,45 +15,6 @@ Next up, once you say "go", it launches a *subagent-driven-development* process,
 There's a bunch more to it, but that's the core of the system. And because the skills trigger automatically, you don't need to do anything special. Your coding agent just has Superpowers.
 
 
-## What's New
-
-**2026-04-25** — Subagent-driven development now enforces pre-task ITC negotiation and a runtime test harness; brainstorming and planning track user journeys through a coverage matrix; and a new `docs/guides/` suite makes team onboarding straightforward.
-
----
-
-### ITC Negotiation and Runtime Test Harness
-
-`subagent-driven-development` now negotiates a formal **Inter-Task Contract (ITC)** before dispatching any implementer. The coding-agent and testing-agent agree on the interface, test tier, and expected outcomes *before* a line of code is written. After implementation, dedicated test-runner subagents execute unit and integration tests and must pass before the task is marked complete.
-
-- **Solution-level ITC** — at the start of a plan run, agents negotiate a full coverage matrix across all tasks
-- **5-round negotiation** — up from 3, giving agents more room to converge before escalating to the user
-- **BLOCKED handling** — simple blockers resolved autonomously; complex ones surfaced to the user with full context
-- **New prompt templates** — `coding-agent-prompt.md`, `testing-agent-prompt.md`, `test-runner-task-prompt.md`, `test-runner-solution-prompt.md`
-
-### Journey-Based Coverage Matrix
-
-The workflow now tracks **user journeys** end-to-end across skills:
-
-- `brainstorming` enumerates journeys as a named step, producing a `<topic>-journeys.yaml`
-- `writing-plans` records a `contributes_to` field per task linking it to journey IDs
-- Solution ITC produces a **coverage matrix**: every journey × testing strategy must be either a runnable scenario or an explicit N/A with justification
-
-Testing strategies are defined in `skills/subagent-driven-development/testing-strategies.md`:
-`happy_path` · `negative_path` · `state_persistence` · `feature_interaction` · `auth_boundary`
-
-### Team Adoption Guides
-
-A new `docs/guides/` directory provides onboarding materials for engineering teams:
-
-| Guide | What it covers |
-|---|---|
-| [Quick Start](docs/guides/quick-start.md) | Install and complete your first task in 5 minutes |
-| [Daily Workflows](docs/guides/daily-workflows.md) | The 4 flows you'll use every day |
-| [Skills Cheat Sheet](docs/guides/skills-cheatsheet.md) | Situation → skill → what to expect |
-| [Guide for Team Leads](docs/guides/team-leads.md) | Rolling out to the team, setting norms |
-| [SDLC Mental Model](docs/guides/SDLC_mental_model_and_workflow.md) | Full development lifecycle with Superpowers |
-
-
 ## Sponsorship
 
 If Superpowers has helped you do stuff that makes money and you are so inclined, I'd greatly appreciate it if you'd consider [sponsoring my opensource work](https://github.com/sponsors/obra).
