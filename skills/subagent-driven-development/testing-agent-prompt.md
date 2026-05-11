@@ -21,6 +21,11 @@ Task tool (general-purpose):
 
     [FULL TEXT of task from plan — paste here]
 
+    ### Journey Context (omit if task has no `Contributes to:` or no journeys.yaml exists)
+
+    [Dispatcher: same YAML objects as passed to the coding agent — referenced journey IDs only.
+    These are the user flows this task enables; use them to verify the ITC's coverage.]
+
     ## Coding Agent's Most Recent Position
 
     [Dispatcher: paste the coding agent's most recent ITC response verbatim.
@@ -58,6 +63,12 @@ Task tool (general-purpose):
     5. **"Untestable" declarations are valid**
        - If the coding agent declared something cannot be runtime-tested, challenge it if a test approach exists.
        - Provide the concrete test approach if one does exist.
+
+    6. **Journey coverage (when `### Journey Context` is present)**
+       - For each referenced journey: confirm `must_cover` addresses its key `steps` and
+         `expected_outcome`. If any step or outcome is uncovered, add a `must_cover` item
+         with an exact command. Cite the journey ID in each amendment.
+       - Skip this check if `### Journey Context` is absent.
 
     ## If Reviewing a Solution ITC
 
