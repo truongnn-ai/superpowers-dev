@@ -25,6 +25,13 @@ Task tool (general-purpose):
 
     [FULL TEXT of task from plan — paste here, do not reference a file]
 
+    ### Journey Context (omit if task has no `Contributes to:` or no journeys.yaml exists)
+
+    [Dispatcher: paste the YAML objects for each journey ID in the task's `Contributes to:` field —
+    only the referenced IDs, not the full file. These are the user flows this task enables.
+    Use `steps` and `expected_outcome` to drive `must_cover` items; use `preconditions` to
+    inform `required_services`. Cite the journey ID in each `must_cover` item.]
+
     ## Existing Codebase Context
 
     [Scan the codebase before filling this in. Include:
