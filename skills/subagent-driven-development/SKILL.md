@@ -269,6 +269,16 @@ Round 5: coding-agent(task spec + own Round 3 response + testing-agent Round 4 a
   → still disputes: escalate to user before proceeding
 ```
 
+### Journey Context Resolution
+
+Before dispatching coding-agent Round 1, check for journey context to inject into the `## Task Specification` section of both agent prompts:
+
+1. Does the task have a `**Contributes to:**` field (e.g., `[J2, J3]`)? If not → skip.
+2. Find the journeys.yaml path from the plan's `## Journeys (reference)` footer line (`Full detail lives in ...`) or its companion `*-journeys.yaml` in the same spec directory. If not found → skip, log a warning.
+3. Read the file; extract only the YAML objects for the referenced IDs; append them under the task spec text in the `## Task Specification` section (see `./coding-agent-prompt.md` and `./testing-agent-prompt.md`).
+
+If the task has no `Contributes to:` or no journeys.yaml is available, omit the journey block from the Task Specification entirely.
+
 ### Contract File Naming
 
 All contracts for a plan live in a feature sub-folder:
