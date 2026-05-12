@@ -10,15 +10,9 @@ Task tool (general-purpose):
   prompt: |
     You are reviewing whether an implementation matches its specification.
 
-    ## Signed ITC (Implementation-Testing Contract)
-
-    [PASTE COMPLETE ITC (Implementation-Testing Contract) YAML here — same contract file as
-    the implementer received, all fields verbatim: task_id, task_name, implementation_scope,
-    test_contract, acceptance_criteria, sign_off.]
-
     ## What Was Requested
 
-    [FULL TEXT of task from plan — for narrative context]
+    [FULL TEXT of task requirements]
 
     ## What Implementer Claims They Built
 
@@ -45,13 +39,9 @@ Task tool (general-purpose):
     Read the implementation code and verify:
 
     **Missing requirements:**
-    - Did they implement every component listed in `implementation_scope.components`?
     - Did they implement everything that was requested?
     - Are there requirements they skipped or missed?
     - Did they claim something works but didn't actually implement it?
-
-    **Scope creep:**
-    - Did they touch files outside `implementation_scope`?
 
     **Extra/unneeded work:**
     - Did they build things that weren't requested?

@@ -17,56 +17,22 @@ There's a bunch more to it, but that's the core of the system. And because the s
 
 ## What's New
 
-### v1.1.0 — 2026-05-12
-
-Subagent-driven development now tiers tasks (`trivial` / `standard` / `heavy`) so simple changes skip the heavy review loop, and ITC negotiation carries explicit user-journey context between agents. Onboarding docs and install instructions also tightened up.
-
-#### Inner-Loop Tier Model
-
-The `writing-plans` skill now classifies every task using a [tier rubric](skills/writing-plans/tier-rubric.md). Each tier dispatches a different subagent chain in `subagent-driven-development`:
-
-| Tier | When it applies | Subagents that run |
-|---|---|---|
-| `trivial` | Docs/config-only changes with no behavior change (README edits, `.gitignore`, version bumps) | implementer only |
-| `standard` | Behavior-preserving refactors, renames, test-only additions | implementer → code-reviewer → test-runner |
-| `heavy` | New behavior, new public API, contract changes, or anything ambiguous (default) | full pipeline: ITC negotiation → implementer → spec-reviewer → code-reviewer → test-runner |
-
-- **Default-heavy rule** — when in doubt, classify as `heavy`. Implementers can escalate up a tier mid-task if a simple change turns out to need real review.
-- **Tier reason** — every task records a `tier_reason` citing the matched rubric clause (e.g. `T1`, `S2`, `H4`), so classifications are auditable.
-- **Implementer escalation exit** — `implementer-prompt.md` now has an explicit path to bail back up if the task no longer fits its assigned tier.
-
-#### Journey Context in ITC Negotiation
-
-ITC handshakes between `coding-agent` and `testing-agent` now exchange a structured **Journey Context** block resolved from the plan's journeys file. Each round also carries knowledge of the previous round's proposals, so 5-round negotiations actually converge instead of looping.
-
-- `coding-agent-prompt.md` and `testing-agent-prompt.md` added Journey Context sections
-- `testing-agent-prompt.md` added a journey-coverage check in its ITC review
-- Negotiation prompts now explain the ITC term inline so agents don't have to chase definitions
-
-#### Onboarding & Install Polish
-
-- [Quick Start](docs/guides/quick-start.md) install instructions clarified for the marketplace flow
-- [Guides README](docs/guides/README.md) adds a "When to use Superpowers vs plain Claude Code" decision section
-- New [SDLC Mental Model](docs/guides/SDLC_mental_model_and_workflow.md) document covers the full development lifecycle with Superpowers
+**2026-04-25** — Subagent-driven development now enforces pre-task ITC negotiation and a runtime test harness; brainstorming and planning track user journeys through a coverage matrix; and a new `docs/guides/` suite makes team onboarding straightforward.
 
 ---
 
-### v1.0.0 — 2026-04-25
+### ITC Negotiation and Runtime Test Harness
 
-Subagent-driven development now enforces pre-task ITC negotiation and a runtime test harness; brainstorming and planning track user journeys through a coverage matrix; and a new `docs/guides/` suite makes team onboarding straightforward.
-
-#### ITC Negotiation and Runtime Test Harness
-
-`subagent-driven-development` negotiates a formal **Inter-Task Contract (ITC)** before dispatching any implementer. The coding-agent and testing-agent agree on the interface, test tier, and expected outcomes *before* a line of code is written. After implementation, dedicated test-runner subagents execute unit and integration tests and must pass before the task is marked complete.
+`subagent-driven-development` now negotiates a formal **Inter-Task Contract (ITC)** before dispatching any implementer. The coding-agent and testing-agent agree on the interface, test tier, and expected outcomes *before* a line of code is written. After implementation, dedicated test-runner subagents execute unit and integration tests and must pass before the task is marked complete.
 
 - **Solution-level ITC** — at the start of a plan run, agents negotiate a full coverage matrix across all tasks
 - **5-round negotiation** — up from 3, giving agents more room to converge before escalating to the user
 - **BLOCKED handling** — simple blockers resolved autonomously; complex ones surfaced to the user with full context
 - **New prompt templates** — `coding-agent-prompt.md`, `testing-agent-prompt.md`, `test-runner-task-prompt.md`, `test-runner-solution-prompt.md`
 
-#### Journey-Based Coverage Matrix
+### Journey-Based Coverage Matrix
 
-The workflow tracks **user journeys** end-to-end across skills:
+The workflow now tracks **user journeys** end-to-end across skills:
 
 - `brainstorming` enumerates journeys as a named step, producing a `<topic>-journeys.yaml`
 - `writing-plans` records a `contributes_to` field per task linking it to journey IDs
@@ -75,7 +41,7 @@ The workflow tracks **user journeys** end-to-end across skills:
 Testing strategies are defined in `skills/subagent-driven-development/testing-strategies.md`:
 `happy_path` · `negative_path` · `state_persistence` · `feature_interaction` · `auth_boundary`
 
-#### Team Adoption Guides
+### Team Adoption Guides
 
 A new `docs/guides/` directory provides onboarding materials for engineering teams:
 
@@ -179,7 +145,7 @@ Start a new session in your chosen platform and ask for something that should tr
 
 3. **writing-plans** - Activates with approved design. Breaks work into bite-sized tasks (2-5 minutes each). Every task has exact file paths, complete code, verification steps.
 
-4. **subagent-driven-development** or **executing-plans** - Activates with plan. Dispatches a tiered subagent chain per task (`trivial` skips review, `heavy` runs full ITC negotiation + spec/code review + test-runner), or executes in batches with human checkpoints.
+4. **subagent-driven-development** or **executing-plans** - Activates with plan. Dispatches fresh subagent per task with two-stage review (spec compliance, then code quality), or executes in batches with human checkpoints.
 
 5. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
 
@@ -202,14 +168,14 @@ Start a new session in your chosen platform and ask for something that should tr
 
 **Collaboration** 
 - **brainstorming** - Socratic design refinement
-- **writing-plans** - Detailed implementation plans with task tier classification (`trivial`/`standard`/`heavy`)
+- **writing-plans** - Detailed implementation plans
 - **executing-plans** - Batch execution with checkpoints
 - **dispatching-parallel-agents** - Concurrent subagent workflows
 - **requesting-code-review** - Pre-review checklist
 - **receiving-code-review** - Responding to feedback
 - **using-git-worktrees** - Parallel development branches
 - **finishing-a-development-branch** - Merge/PR decision workflow
-- **subagent-driven-development** - Tier-aware dispatch with ITC negotiation, runtime test harness, and journey-based coverage
+- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
 
 **Meta**
 - **writing-skills** - Create new skills following best practices (includes testing methodology)
