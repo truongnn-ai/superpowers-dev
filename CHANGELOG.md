@@ -1,4 +1,20 @@
 # Changelog
+## [v1.1.0] - 2026-05-11
+
+### Added
+- **Subagent-driven development tier model**: tier rubric + tier-aware dispatch in the inner loop.
+- **ITC negotiation protocol**: coding-agent and testing-agent negotiation prompts, escalation handling, journey-context resolution, end-of-run ledger.
+- **E2E coverage matrix**: testing-strategies playbook, coverage-matrix design spec, plan, and integration into subagent-driven-development.
+- **E2E test harness**: design spec, plan, prompt templates (`coding-agent`, `testing-agent`, `test-runner-task`, `test-runner-solution`), `contracts/` directory.
+- **Fullstack adoption guide** (`docs/guides/`): quick-start, daily-workflows, skills-cheatsheet, team-leads, README, SDLC mental model and workflow.
+
+### Changed
+- `subagent-driven-development` SKILL: tier dispatch, ITC integration, escalation handling.
+- `writing-plans` SKILL: wires tier rubric, adds Journeys reference and `contributes_to` field.
+- `brainstorming` SKILL: Journey Enumeration step.
+- `implementer-prompt`, `spec-reviewer-prompt`, `testing-agent-prompt`, `coding-agent-prompt`: tier-aware exits, ITC blocks, journey context.
+
+-----
 
 ## [5.0.5] - 2026-03-17
 

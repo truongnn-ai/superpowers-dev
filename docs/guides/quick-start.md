@@ -9,7 +9,7 @@ Get from zero to your first AI-assisted feature in about 5 minutes.
 In a Claude Code session:
 
 ```bash
-/plugin install superpowers@claude-plugins-official
+claude plugin install superpowers@claude-plugins-official
 ```
 
 Start a **new session** after installing — existing sessions won't pick up the plugin.
@@ -128,16 +128,31 @@ If your team maintains a fork of Superpowers (with custom skills or workflow twe
 git clone https://github.com/YOUR-ORG/superpowers.git
 ```
 
+e.g:
+```bash
+git clone git@github.com:truongnn-ai/superpowers-dev.git
+```
+
+Checkout release branch:
+```bash
+git checkout -b release origin/release
+```
+
 **2. Register your fork as a marketplace**
 
 ```bash
-/plugin marketplace add YOUR-ORG/superpowers-marketplace
+claude plugin marketplace add path-to-local-directory --scope user
+```
+
+e.g:
+```bash
+claude plugin marketplace add ~/Documents/ws/superpowers-dev --scope user
 ```
 
 **3. Install from your marketplace**
 
 ```bash
-/plugin install superpowers@YOUR-ORG-superpowers-marketplace
+claude plugin install superpowers@superpowers-marketplace-dev
 ```
 
 **4. Update `.claude/settings.json` to use your version**
@@ -146,7 +161,7 @@ git clone https://github.com/YOUR-ORG/superpowers.git
 {
   "enabledPlugins": {
     "superpowers@claude-plugins-official": false,
-    "superpowers@YOUR-ORG-superpowers-marketplace": true
+    "superpowers@superpowers-marketplace-dev": true
   }
 }
 ```
@@ -157,6 +172,12 @@ To switch back to the official plugin, reverse the `true`/`false` values in `set
 
 > **Tip:** If only you (not the whole team) should use the custom plugin, put this config in `.claude/settings.local.json` instead.
 
+**6. Remove your marketketplace (Optional)**
+```bash
+claude plugin marketplace remove superpowers-marketplace-dev
+```
+
+Reference: https://code.claude.com/docs/en/plugin-marketplaces#overview
 ---
 
 ## Next step

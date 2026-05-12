@@ -42,6 +42,59 @@ This structure informs the task decomposition. Each task should produce self-con
 - "Run the tests and make sure they pass" - step
 - "Commit" - step
 
+## Tier Classification
+
+Every task in the plan MUST be classified into one of three execution tiers — `trivial`, `standard`, or `heavy` — using the rubric in `./tier-rubric.md`. The tier determines which inner-loop gates run (ITC negotiation, spec-reviewer, code-reviewer, test-runner). See `docs/superpowers/specs/2026-04-25-inner-loop-tiered-execution-design.md` §2 for what runs at each tier.
+
+**How to classify:**
+1. Read `./tier-rubric.md`.
+2. For each task, walk the rubric top-down. Pick the first tier whose clauses are satisfied.
+3. Quote the matched clause id in `tier_reason` (e.g., `"T1: only modifies .gitignore (config-only file); T2/T3/T4 satisfied"`).
+4. If no clause matches cleanly, classify as `heavy` and cite `H5` in `tier_reason`.
+
+**Required schema — inline YAML block immediately after each task header:**
+
+````markdown
+### Task N: [Component Name]
+
+```yaml
+tier: trivial
+tier_reason: "T1: only modifies .gitignore (config-only file); T2/T3/T4 satisfied"
+```
+
+**Files:**
+- ...
+````
+
+**Required fields:**
+- `tier` — one of `trivial | standard | heavy`
+- `tier_reason` — string quoting the matched rubric clause id and a short explanation
+
+**Default-heavy rule:** when uncertain, choose `heavy`. Misclassifying down (e.g., labeling a heavy task `trivial`) shortcuts safety gates; misclassifying up only costs extra agent work. Bias toward safety.
+
+**Test-only tasks** (e.g., "add tests for existing function X") qualify as `standard` via clause `S4`, not `heavy`.
+
+**Trivial example:**
+
+```yaml
+tier: trivial
+tier_reason: "T1: only modifies README.md (config-only file); T2/T3/T4 satisfied"
+```
+
+**Standard example:**
+
+```yaml
+tier: standard
+tier_reason: "S1: rename of internal helper across 3 files, behavior-preserving; S2/S3 satisfied"
+```
+
+**Heavy example:**
+
+```yaml
+tier: heavy
+tier_reason: "H2: adds a new exported function buildIndex() to public API"
+```
+
 ## Plan Document Header
 
 **Every plan MUST start with this header:**
@@ -77,6 +130,11 @@ This is a compact readability hint for plan readers — do not duplicate full jo
 
 ````markdown
 ### Task N: [Component Name]
+
+```yaml
+tier: heavy
+tier_reason: "H1: adds new behavior — implements feature X end-to-end"
+```
 
 **Files:**
 - Create: `exact/path/to/file.py`
@@ -143,6 +201,8 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 **2. Placeholder scan:** Search your plan for red flags — any of the patterns from the "No Placeholders" section above. Fix them.
 
 **3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
+
+**4. Tier coverage:** Every task has a `tier` block with `tier` and `tier_reason`. Every `tier_reason` quotes a clause id from `./tier-rubric.md` (e.g., `T1`, `S2`, `H4`). Tasks with no clear match are tagged `heavy` citing `H5`.
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
 

@@ -5,11 +5,11 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute plan by negotiating an ITC per task, dispatching a fresh implementer subagent, running two-stage review (spec then quality), and verifying with a runtime test harness before marking tasks complete.
+Execute plan by negotiating an ITC (Implementation-Testing Contract) per task, dispatching a fresh implementer subagent, running two-stage review (spec then quality), and verifying with a runtime test harness before marking tasks complete.
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-**Core principle:** ITC negotiation before each task + fresh implementer + two-stage review + runtime test harness = verifiable, high-quality iteration
+**Core principle:** ITC (Implementation-Testing Contract) negotiation before each task + fresh implementer + two-stage review + runtime test harness = verifiable, high-quality iteration
 
 ## When to Use
 
@@ -132,6 +132,119 @@ digraph process {
 }
 ```
 
+## Tier-Aware Dispatch
+
+Each task in a plan carries an inline YAML `tier` block (see `skills/writing-plans/SKILL.md` and `skills/writing-plans/tier-rubric.md`). The orchestrator MUST read the tier per task and run only the gates that tier requires.
+
+### Reading the tier
+
+For each task, parse the YAML block immediately following the task header:
+
+```yaml
+tier: <trivial | standard | heavy>
+tier_reason: "<rubric clause id and explanation>"
+```
+
+**fail-safe rules — when in doubt, treat the task as `heavy`:**
+- No tier block present → treat as `heavy`. Log a warning naming the task.
+- YAML parse error → treat as `heavy`. Log a warning with the parse error and task id.
+- `tier` value is not one of `trivial | standard | heavy` → treat as `heavy`. Log a warning naming the task and the unknown value.
+- The user may hand-edit `tier` in `plan.md`; the orchestrator trusts the file as the source of truth at execution time and does NOT re-validate against the rubric.
+
+### Per-tier flows
+
+The flows below replace the per-task block of the main process flowchart for every task. The flowchart's solution-level negotiation, E2E + full-suite test-runner, and final code reviewer (after all tasks complete) are unchanged.
+
+### Trivial flow
+
+1. Dispatch implementer subagent (`./implementer-prompt.md`) with task spec + scene-setting context.
+2. Handle implementer status (`DONE`, `DONE_WITH_CONCERNS`, `BLOCKED`, `NEEDS_CONTEXT`, `ESCALATE`) per the existing `## Handling Implementer Status` and `## Escalation Handling` rules.
+3. On `DONE`: mark task complete in TodoWrite. Skip ITC negotiation, spec-reviewer, code-reviewer, and test-runner — none apply at trivial.
+
+### Standard flow
+
+1. Dispatch implementer subagent (`./implementer-prompt.md`).
+2. On `DONE`: dispatch code quality reviewer subagent (`./code-quality-reviewer-prompt.md`).
+3. On reviewer ✅: dispatch unit test-runner (`./test-runner-task-prompt.md`) restricted to existing tests (do not require new tests for the change).
+4. On test-runner `PASS`: mark task complete.
+5. Skip ITC negotiation and spec-reviewer — neither applies at standard.
+
+### Heavy flow
+
+Run the full per-task block exactly as the main process flowchart describes:
+
+1. ITC negotiation (coding-agent ↔ testing-agent, up to 5 rounds, write contract file).
+2. Dispatch implementer subagent (`./implementer-prompt.md`) with: task spec + full ITC (Implementation-Testing Contract) (paste complete contract file contents inline — all fields) + scene-setting context.
+3. Dispatch spec-reviewer subagent (`./spec-reviewer-prompt.md`) with: task spec + full ITC (Implementation-Testing Contract) (paste complete contract file contents inline — all fields) + implementer report.
+4. Code quality reviewer subagent.
+5. Unit test-runner; integration test-runner if `tiers_required` includes `integration`.
+
+### Dispatch decision (pseudocode)
+
+```
+for task in plan.tasks:
+    tier = parse_tier_block(task) or "heavy"   # fail-safe
+    match tier:
+        case "trivial": run_trivial_flow(task)
+        case "standard": run_standard_flow(task)
+        case "heavy":    run_heavy_flow(task)
+```
+
+## Escalation Handling
+
+Implementer subagents may exit with `ESCALATE` (see `./implementer-prompt.md`). The escalation contract: implementer halts before committing, discards any partial work, and returns a structured `<ESCALATE>` block as the first content of its reply.
+
+### Detecting an escalation
+
+After the implementer returns, check whether the reply begins with `<ESCALATE>`:
+
+- If yes → handle per this section. Do NOT run any further gates for this dispatch attempt.
+- If no → process the reply per `## Handling Implementer Status` (DONE, DONE_WITH_CONCERNS, BLOCKED, NEEDS_CONTEXT).
+
+### Validating the escalation
+
+Parse the YAML inside the `<ESCALATE>` block. Reject the escalation (and halt the plan with a clear user message) if any of the following is true:
+
+- `requested_tier` is not strictly higher than `current_tier` (one-way only — never demote).
+- `current_tier` is `heavy` (heavy is the top tier; nothing higher exists).
+- The task's `escalation_count` is already `1` (per-task cap reached).
+
+When rejecting because `current_tier` is `heavy` or because the cap is reached, surface a user-facing message naming the task id and the reason, then halt.
+
+### Re-dispatching at the new tier
+
+If validation passes:
+
+1. Update `plan.md` for the task (audit trail):
+   - `tier` ← `requested_tier`
+   - `tier_reason` ← `"escalated from <current_tier>: <reason>"`
+   - `escalation_count` ← previous + 1 (start at 0; absent treated as 0)
+2. Append the escalation note (full `<ESCALATE>` payload) to the in-memory escalation ledger for the run.
+3. **fresh re-dispatch at the new tier — same call as a first dispatch.** Do NOT inject the escalation note into the new flow's prompt. The task description in `plan.md` is the source of truth; the escalation note is audit-only.
+
+### End-of-run escalation ledger
+
+After the last task in the plan completes (or the plan halts), append the ledger to `plan.md` if any escalations occurred:
+
+```markdown
+## Escalations (<count>)
+
+- T<id>: <original_tier> → <new_tier>. Reason: <reason>. Rubric clause violated: <clause id>.
+- T<id>: <original_tier> → <new_tier>. Reason: <reason>. Rubric clause violated: <clause id>.
+```
+
+If no escalations occurred during the run, do not append the section.
+
+### Caps and guardrails
+
+| Rule | Value |
+|---|---|
+| Max escalations per task | 1 (orchestrator enforces) |
+| Plan-wide escalation budget | none (per-task cap is the only cap) |
+| `heavy` may not escalate | enforced — heavy escalation halts the plan |
+| Demotion at runtime | forbidden — escalation is one-way only |
+| Partial work on escalate | discarded by implementer; orchestrator does NOT inject the escalation note into the re-dispatched prompt |
+
 ## ITC Negotiation
 
 Before implementing each task, two agents negotiate an Implementation-Testing Contract (ITC): what will be built and how it will be verified at runtime.
@@ -142,24 +255,42 @@ Before implementing each task, two agents negotiate an Implementation-Testing Co
 
 ```
 Round 1: coding-agent(task spec + codebase context) → draft ITC
-Round 2: testing-agent(task spec + draft ITC)
-  → signs ✅: contract locked → write to docs/superpowers/contracts/YYYY-MM-DDTHH-MM-SS-task_itc_N.md and commit
+Round 2: testing-agent(task spec + Round 1 draft ITC)
+  → signs ✅: contract locked → write to docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/YYYY-MM-DDTHH-MM-SS-task_itc_N.md and commit
   → lists amendments: proceed to Round 3
-Round 3: coding-agent(task spec + testing-agent amendments)
+Round 3: coding-agent(task spec + own Round 1 draft ITC + testing-agent Round 2 amendments)
   → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
   → disputes with reasoning: proceed to Round 4
-Round 4: testing-agent(task spec + coding-agent's Round 3 position)
+Round 4: testing-agent(task spec + own Round 2 amendments + coding-agent Round 3 response)
   → signs ✅: contract locked
   → lists amendments: proceed to Round 5
-Round 5: coding-agent(task spec + testing-agent's Round 4 amendments) — final round
+Round 5: coding-agent(task spec + own Round 3 response + testing-agent Round 4 amendments) — final round
   → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
   → still disputes: escalate to user before proceeding
 ```
 
+### Journey Context Resolution
+
+Before dispatching coding-agent Round 1, check for journey context to inject into the `## Task Specification` section of both agent prompts:
+
+1. Does the task have a `**Contributes to:**` field (e.g., `[J2, J3]`)? If not → skip.
+2. Find the journeys.yaml path from the plan's `## Journeys (reference)` footer line (`Full detail lives in ...`) or its companion `*-journeys.yaml` in the same spec directory. If not found → skip, log a warning.
+3. Read the file; extract only the YAML objects for the referenced IDs; append them under the task spec text in the `## Task Specification` section (see `./coding-agent-prompt.md` and `./testing-agent-prompt.md`).
+
+If the task has no `Contributes to:` or no journeys.yaml is available, omit the journey block from the Task Specification entirely.
+
 ### Contract File Naming
 
-`YYYY-MM-DDTHH-MM-SS-task_itc_N.md` for per-task ITCs.
-`YYYY-MM-DDTHH-MM-SS-solution_itc.md` for the solution ITC.
+All contracts for a plan live in a feature sub-folder:
+`docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/`
+
+- `YYYY-MM-DD` = plan start date; `feature-name` = kebab-case slug of the feature
+- Sub-folder is created when the first contract for the plan is written
+- All task ITCs and the solution ITC for the same plan go into the same sub-folder
+
+File names inside the sub-folder:
+- `YYYY-MM-DDTHH-MM-SS-task_itc_N.md` for per-task ITCs
+- `YYYY-MM-DDTHH-MM-SS-solution_itc.md` for the solution ITC
 
 ISO 8601 format with colons replaced by hyphens (filesystem-safe). Lexicographic order = chronological order. Old contracts are never deleted — git history is the audit trail.
 
@@ -208,7 +339,7 @@ Use the least powerful model that can handle each role to conserve cost and incr
 
 ## Handling Implementer Status
 
-Implementer subagents report one of four statuses. Handle each appropriately:
+Implementer subagents report one of five statuses. Handle each appropriately:
 
 **DONE:** Proceed to spec compliance review.
 
@@ -222,6 +353,8 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 3. If the task is too large, break it into smaller pieces
 4. If the plan itself is wrong, escalate to the human
 
+**ESCALATE:** The implementer's reply begins with an `<ESCALATE>` YAML block. Process per `## Escalation Handling`. Do NOT proceed to spec or quality review for this dispatch attempt.
+
 **Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
 
 ## Handling Test-Runner Status
@@ -229,7 +362,7 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 Test-runner subagents report one of three statuses: PASS | FAIL | BLOCKED
 
 **PASS:** All commands exited 0 and acceptance criteria are met.
-- Unit PASS → read `tiers_required` from the task ITC file in `docs/superpowers/contracts/`: if `[unit, integration]`, dispatch integration test-runner; if `[unit]` only, mark task complete
+- Unit PASS → read `tiers_required` from the task ITC file in `docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/`: if `[unit, integration]`, dispatch integration test-runner; if `[unit]` only, mark task complete
 - Integration PASS → mark task complete
 - E2E + full suite PASS → proceed to final code review
 
@@ -292,7 +425,7 @@ Coding agent: Proposes test_contract with tiers_required: [unit], 2 test command
 Testing agent: ✅ Spec compliant — commands target specific files, must_cover includes
                idempotent install and --force flag behavior.
 
-[Write docs/superpowers/contracts/2026-04-14T14-30-00-task_itc_1.md and commit]
+[Write docs/superpowers/contracts/2026-04-14-hook-installation/2026-04-14T14-30-00-task_itc_1.md and commit]
 
 [Dispatch implementation subagent with full task text + context + ITC path]
 
@@ -337,7 +470,7 @@ Coding agent: Proposes tiers_required: [unit, integration].
 [Dispatch testing-agent ITC Round 2 — task spec + coding agent's draft]
 Testing agent: ✅ Approved — commands target specific files, required_services lists the test DB.
 
-[Write docs/superpowers/contracts/2026-04-14T14-32-00-task_itc_2.md and commit]
+[Write docs/superpowers/contracts/2026-04-14-hook-installation/2026-04-14T14-32-00-task_itc_2.md and commit]
 
 [Dispatch implementation subagent with full task text + context + ITC path]
 
@@ -405,7 +538,7 @@ Testing agent: ✅ Approved — matrix complete, no shallow assertion_shapes, na
 
 [Post-negotiation gate: verify matrix has row per journey × column per strategy, no empty cells]
 
-[Write docs/superpowers/contracts/2026-04-20T16-00-00-solution_itc.md and commit]
+[Write docs/superpowers/contracts/2026-04-14-hook-installation/2026-04-20T16-00-00-solution_itc.md and commit]
 
 [Dispatch E2E + full suite test-runner — coverage_matrix + full_suite command]
 Test runner:
@@ -490,7 +623,9 @@ Done!
 - Attempt to set env vars or configure external services autonomously — escalate to user for those
 - Proceed past FAIL test-runner without re-running harness after implementer fix
 - Run integration test-runner before unit tests PASS
-- Forget to write and commit the ITC file to docs/superpowers/contracts/ after negotiation
+- Forget to write and commit the ITC file to docs/superpowers/contracts/<YYYY-MM-DD-feature-name>/ after negotiation
+- Inject the implementer's escalation note into the re-dispatched flow's prompt — escalation notes are audit-only; the next agent reads the task description, not the note
+- Demote a task's tier at runtime — escalation is one-way only
 
 **If subagent asks questions:**
 - Answer clearly and completely

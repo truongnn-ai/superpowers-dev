@@ -1,19 +1,19 @@
 {
-  "name": "superpowers-dev",
+  "name": "superpowers-marketplace-dev",
   "description": "Development marketplace for Superpowers core skills library",
   "owner": {
-    "name": "Jesse Vincent",
-    "email": "jesse@fsck.com"
+    "name": "Codelink AI",
+    "email": "hello@codelinks.io"
   },
   "plugins": [
     {
       "name": "superpowers",
       "description": "Core skills library for Claude Code: TDD, debugging, collaboration patterns, and proven techniques",
-      "version": "5.0.6",
+      "version": "v1.1.0",
       "source": "./",
       "author": {
-        "name": "Jesse Vincent",
-        "email": "jesse@fsck.com"
+        "name": "Codelink AI",
+        "email": "hello@codelinks.io"
       }
     }
   ]
