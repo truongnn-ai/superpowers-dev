@@ -5,11 +5,11 @@ description: Use when executing implementation plans with independent tasks in t
 
 # Subagent-Driven Development
 
-Execute plan by dispatching fresh subagent per task, with two-stage review after each: spec compliance review first, then code quality review.
+Execute plan by negotiating an ITC per task, dispatching a fresh implementer subagent, running two-stage review (spec then quality), and verifying with a runtime test harness before marking tasks complete.
 
 **Why subagents:** You delegate tasks to specialized agents with isolated context. By precisely crafting their instructions and context, you ensure they stay focused and succeed at their task. They should never inherit your session's context or history — you construct exactly what they need. This also preserves your own context for coordination work.
 
-**Core principle:** Fresh subagent per task + two-stage review (spec then quality) = high quality, fast iteration
+**Core principle:** ITC negotiation before each task + fresh implementer + two-stage review + runtime test harness = verifiable, high-quality iteration
 
 ## When to Use
 
@@ -34,7 +34,9 @@ digraph when_to_use {
 **vs. Executing Plans (parallel session):**
 - Same session (no context switch)
 - Fresh subagent per task (no context pollution)
+- Per-task ITC negotiation (coding-agent + testing-agent) before implementation
 - Two-stage review after each task: spec compliance first, then code quality
+- Runtime test harness (unit + integration) verifies code actually works before task complete
 - Faster iteration (no human-in-loop between tasks)
 
 ## The Process
@@ -45,6 +47,11 @@ digraph process {
 
     subgraph cluster_per_task {
         label="Per Task";
+        "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [shape=box];
+        "Dispatch testing-agent ITC (./testing-agent-prompt.md)" [shape=box];
+        "ITC agreed? (both ✅)" [shape=diamond];
+        "Rounds 3–5 or escalate to user" [shape=box];
+        "Escalate task ITC to user" [shape=box];
         "Dispatch implementer subagent (./implementer-prompt.md)" [shape=box];
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
@@ -55,15 +62,36 @@ digraph process {
         "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [shape=box];
         "Code quality reviewer subagent approves?" [shape=diamond];
         "Implementer subagent fixes quality issues" [shape=box];
+        "Dispatch unit test-runner (./test-runner-task-prompt.md)" [shape=box];
+        "Unit tests PASS?" [shape=diamond];
+        "Implementer fixes unit failures" [shape=box];
+        "Integration tier required? (task ITC tiers_required)" [shape=diamond];
+        "Dispatch integration test-runner (./test-runner-task-prompt.md)" [shape=box];
+        "Integration tests PASS?" [shape=diamond];
+        "Implementer fixes integration failures" [shape=box];
         "Mark task complete in TodoWrite" [shape=box];
     }
 
     "Read plan, extract all tasks with full text, note context, create TodoWrite" [shape=box];
     "More tasks remain?" [shape=diamond];
+    "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [shape=box];
+    "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)" [shape=box];
+    "Solution ITC agreed? (both ✅)" [shape=diamond];
+    "Solution Rounds 3–5 or escalate to user" [shape=box];
+    "Escalate solution ITC to user" [shape=box];
+    "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [shape=box];
+    "E2E + full suite PASS?" [shape=diamond];
+    "Implementer fixes E2E failures" [shape=box];
     "Dispatch final code reviewer subagent for entire implementation" [shape=box];
     "Use superpowers:finishing-a-development-branch" [shape=box style=filled fillcolor=lightgreen];
 
-    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch implementer subagent (./implementer-prompt.md)";
+    "Read plan, extract all tasks with full text, note context, create TodoWrite" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)";
+    "Dispatch coding-agent ITC (./coding-agent-prompt.md)" -> "Dispatch testing-agent ITC (./testing-agent-prompt.md)";
+    "Dispatch testing-agent ITC (./testing-agent-prompt.md)" -> "ITC agreed? (both ✅)";
+    "ITC agreed? (both ✅)" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
+    "ITC agreed? (both ✅)" -> "Rounds 3–5 or escalate to user" [label="no"];
+    "Rounds 3–5 or escalate to user" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [label="re-dispatch coding-agent with amendments (rounds 3, 5)"];
+    "Rounds 3–5 or escalate to user" -> "Escalate task ITC to user" [label="5 rounds, no agreement"];
     "Dispatch implementer subagent (./implementer-prompt.md)" -> "Implementer subagent asks questions?";
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
@@ -76,13 +104,92 @@ digraph process {
     "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" -> "Code quality reviewer subagent approves?";
     "Code quality reviewer subagent approves?" -> "Implementer subagent fixes quality issues" [label="no"];
     "Implementer subagent fixes quality issues" -> "Dispatch code quality reviewer subagent (./code-quality-reviewer-prompt.md)" [label="re-review"];
-    "Code quality reviewer subagent approves?" -> "Mark task complete in TodoWrite" [label="yes"];
+    "Code quality reviewer subagent approves?" -> "Dispatch unit test-runner (./test-runner-task-prompt.md)" [label="yes"];
+    "Dispatch unit test-runner (./test-runner-task-prompt.md)" -> "Unit tests PASS?";
+    "Unit tests PASS?" -> "Implementer fixes unit failures" [label="FAIL"];
+    "Implementer fixes unit failures" -> "Dispatch unit test-runner (./test-runner-task-prompt.md)" [label="re-run"];
+    "Unit tests PASS?" -> "Integration tier required? (task ITC tiers_required)" [label="PASS"];
+    "Integration tier required? (task ITC tiers_required)" -> "Dispatch integration test-runner (./test-runner-task-prompt.md)" [label="yes"];
+    "Dispatch integration test-runner (./test-runner-task-prompt.md)" -> "Integration tests PASS?";
+    "Integration tests PASS?" -> "Implementer fixes integration failures" [label="FAIL"];
+    "Implementer fixes integration failures" -> "Dispatch integration test-runner (./test-runner-task-prompt.md)" [label="re-run"];
+    "Integration tests PASS?" -> "Mark task complete in TodoWrite" [label="PASS"];
+    "Integration tier required? (task ITC tiers_required)" -> "Mark task complete in TodoWrite" [label="no"];
     "Mark task complete in TodoWrite" -> "More tasks remain?";
-    "More tasks remain?" -> "Dispatch implementer subagent (./implementer-prompt.md)" [label="yes"];
-    "More tasks remain?" -> "Dispatch final code reviewer subagent for entire implementation" [label="no"];
+    "More tasks remain?" -> "Dispatch coding-agent ITC (./coding-agent-prompt.md)" [label="yes"];
+    "More tasks remain?" -> "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [label="no"];
+    "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" -> "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)";
+    "Dispatch testing-agent Solution ITC Round 2 (./testing-agent-prompt.md)" -> "Solution ITC agreed? (both ✅)";
+    "Solution ITC agreed? (both ✅)" -> "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [label="yes"];
+    "Solution ITC agreed? (both ✅)" -> "Solution Rounds 3–5 or escalate to user" [label="no"];
+    "Solution Rounds 3–5 or escalate to user" -> "Dispatch coding-agent Solution ITC Round 1 (./coding-agent-prompt.md)" [label="re-dispatch coding-agent with amendments (rounds 3, 5)"];
+    "Solution Rounds 3–5 or escalate to user" -> "Escalate solution ITC to user" [label="5 rounds, no agreement"];
+    "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" -> "E2E + full suite PASS?";
+    "E2E + full suite PASS?" -> "Implementer fixes E2E failures" [label="FAIL"];
+    "Implementer fixes E2E failures" -> "Dispatch E2E + full suite test-runner (./test-runner-solution-prompt.md)" [label="re-run"];
+    "E2E + full suite PASS?" -> "Dispatch final code reviewer subagent for entire implementation" [label="PASS"];
     "Dispatch final code reviewer subagent for entire implementation" -> "Use superpowers:finishing-a-development-branch";
 }
 ```
+
+## ITC Negotiation
+
+Before implementing each task, two agents negotiate an Implementation-Testing Contract (ITC): what will be built and how it will be verified at runtime.
+
+**Why two agents:** A single agent writing its own test contract is subjective. Two agents with opposing incentives force completeness — the coding agent pushes for minimal buildable scope, the testing agent pushes for maximum coverage. Neither can finalize the contract alone.
+
+### Protocol
+
+```
+Round 1: coding-agent(task spec + codebase context) → draft ITC
+Round 2: testing-agent(task spec + draft ITC)
+  → signs ✅: contract locked → write to docs/superpowers/contracts/YYYY-MM-DDTHH-MM-SS-task_itc_N.md and commit
+  → lists amendments: proceed to Round 3
+Round 3: coding-agent(task spec + testing-agent amendments)
+  → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
+  → disputes with reasoning: proceed to Round 4
+Round 4: testing-agent(task spec + coding-agent's Round 3 position)
+  → signs ✅: contract locked
+  → lists amendments: proceed to Round 5
+Round 5: coding-agent(task spec + testing-agent's Round 4 amendments) — final round
+  → accepts amendments + signs ✅: testing-agent re-reviews → if ✅, contract locked
+  → still disputes: escalate to user before proceeding
+```
+
+### Contract File Naming
+
+`YYYY-MM-DDTHH-MM-SS-task_itc_N.md` for per-task ITCs.
+`YYYY-MM-DDTHH-MM-SS-solution_itc.md` for the solution ITC.
+
+ISO 8601 format with colons replaced by hyphens (filesystem-safe). Lexicographic order = chronological order. Old contracts are never deleted — git history is the audit trail.
+
+### Tier Vocabulary
+
+Task ITC valid tiers: `unit`, `integration` — `unit` is always the minimum.
+Solution ITC valid tiers: `e2e`, `full_suite` — these never appear in task ITCs.
+
+### Solution ITC
+
+Negotiated once after all tasks complete, before the E2E harness runs.
+
+**Required inputs** (load all three before dispatching Round 1):
+1. `docs/superpowers/specs/<date>-<topic>-journeys.yaml` — authoritative journey list, produced at brainstorm time.
+2. `skills/subagent-driven-development/testing-strategies.md` — the canonical strategy playbook.
+3. The actual implementation (coding agent scans the codebase, not the plan).
+
+**Output shape:** the signed solution ITC contains a `coverage_matrix` whose rows are journey IDs and whose columns are strategy IDs from the playbook. Every cell is either a `scenario` (with `command` and `assertion_shape`) or an `na` (with non-empty justification). Free-form `scenarios:` lists are no longer valid.
+
+**Protocol:** same five-round negotiation alternating between coding-agent (odd rounds) and testing-agent (even rounds) up to Round 5. The flowchart's escalation arc represents the terminal case (5 rounds without agreement).
+
+**Post-negotiation gate (before dispatching the solution test-runner):**
+Verify the signed ITC's `coverage_matrix` has:
+- A row for every journey in journeys.yaml.
+- A column for every strategy ID in testing-strategies.md.
+- A non-empty `scenario` or `na` value in every cell.
+
+If any row, column, or cell is missing, reject and re-dispatch Round 1.
+
+See full design: `docs/superpowers/specs/2026-04-20-e2e-coverage-matrix-design.md`
 
 ## Model Selection
 
@@ -117,11 +224,51 @@ Implementer subagents report one of four statuses. Handle each appropriately:
 
 **Never** ignore an escalation or force the same model to retry without changes. If the implementer said it's stuck, something needs to change.
 
+## Handling Test-Runner Status
+
+Test-runner subagents report one of three statuses: PASS | FAIL | BLOCKED
+
+**PASS:** All commands exited 0 and acceptance criteria are met.
+- Unit PASS → read `tiers_required` from the task ITC file in `docs/superpowers/contracts/`: if `[unit, integration]`, dispatch integration test-runner; if `[unit]` only, mark task complete
+- Integration PASS → mark task complete
+- E2E + full suite PASS → proceed to final code review
+
+**FAIL:** Commands ran but tests failed. The code is wrong.
+- Extract the `failures` list from the test-runner report
+- Dispatch implementer with: original task spec + path to task ITC + exact failure details from report
+- Re-dispatch the **same** test-runner after implementer reports DONE
+- Do NOT skip the re-run — implementer claims must be independently verified
+
+**BLOCKED:** Commands could not run. The environment is not ready.
+- Read `reason` and `resolution` from the test-runner report
+- Assess whether you can resolve the issue yourself:
+  - **Resolve autonomously** if the fix is a runnable command you can execute safely — e.g. `npm run build`, starting a local test server, running a seed script
+  - **Escalate to the user** for issues you cannot handle yourself — env vars requiring credentials or secrets, external service configuration, complex or destructive operations, anything requiring human judgment
+- After resolving (or after the user confirms resolution), re-dispatch the same test-runner
+- Do NOT dispatch the implementer — BLOCKED is an environment problem, not a code problem
+
+**Never:**
+- Proceed past FAIL without re-running the harness after implementer fixes
+- Dispatch the implementer in response to BLOCKED (resolve the environment or escalate to user instead)
+- Attempt to set env vars or configure external services autonomously — escalate to user for those
+- Re-dispatch the test-runner without first resolving or getting user confirmation on the BLOCKED issue
+- Renegotiate the ITC because tests are failing (fix the code, not the contract)
+- Run integration test-runner before unit tests PASS
+
 ## Prompt Templates
 
-- `./implementer-prompt.md` - Dispatch implementer subagent
-- `./spec-reviewer-prompt.md` - Dispatch spec compliance reviewer subagent
-- `./code-quality-reviewer-prompt.md` - Dispatch code quality reviewer subagent
+**ITC Negotiation:**
+- `./coding-agent-prompt.md` — Dispatch coding agent (Round 1 and Round 3)
+- `./testing-agent-prompt.md` — Dispatch testing agent (Round 2)
+
+**Implementation and review:**
+- `./implementer-prompt.md` — Dispatch implementer subagent
+- `./spec-reviewer-prompt.md` — Dispatch spec compliance reviewer subagent
+- `./code-quality-reviewer-prompt.md` — Dispatch code quality reviewer subagent
+
+**Test harness:**
+- `./test-runner-task-prompt.md` — Dispatch test-runner for unit or integration tier (per task)
+- `./test-runner-solution-prompt.md` — Dispatch test-runner for E2E + full suite (solution-level)
 
 ## Example Workflow
 
@@ -135,7 +282,19 @@ You: I'm using Subagent-Driven Development to execute this plan.
 Task 1: Hook installation script
 
 [Get Task 1 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
+
+[Dispatch coding-agent ITC Round 1 — task spec + existing hooks/ directory context]
+Coding agent: Proposes test_contract with tiers_required: [unit], 2 test commands.
+              Rationale: no external services, pure filesystem writes.
+              coding_agent: ✅
+
+[Dispatch testing-agent ITC Round 2 — task spec + coding agent's draft]
+Testing agent: ✅ Spec compliant — commands target specific files, must_cover includes
+               idempotent install and --force flag behavior.
+
+[Write docs/superpowers/contracts/2026-04-14T14-30-00-task_itc_1.md and commit]
+
+[Dispatch implementation subagent with full task text + context + ITC path]
 
 Implementer: "Before I begin - should the hook be installed at user or system level?"
 
@@ -154,12 +313,33 @@ Spec reviewer: ✅ Spec compliant - all requirements met, nothing extra
 [Get git SHAs, dispatch code quality reviewer]
 Code reviewer: Strengths: Good test coverage, clean. Issues: None. Approved.
 
+[Dispatch unit test-runner — commands from task ITC]
+Test runner:
+  Status: PASS
+  Results:
+    - command: "npm test -- tests/install-hook.test.js"
+      status: PASS
+      summary: "5/5 tests passed"
+
+[task ITC tiers_required: [unit] — skip integration harness]
+
 [Mark Task 1 complete]
 
 Task 2: Recovery modes
 
 [Get Task 2 text and context (already extracted)]
-[Dispatch implementation subagent with full task text + context]
+
+[Dispatch coding-agent ITC Round 1 — task spec + codebase context]
+Coding agent: Proposes tiers_required: [unit, integration].
+              Rationale: recovery modes write to and read from the index DB.
+              coding_agent: ✅
+
+[Dispatch testing-agent ITC Round 2 — task spec + coding agent's draft]
+Testing agent: ✅ Approved — commands target specific files, required_services lists the test DB.
+
+[Write docs/superpowers/contracts/2026-04-14T14-32-00-task_itc_2.md and commit]
+
+[Dispatch implementation subagent with full task text + context + ITC path]
 
 Implementer: [No questions, proceeds]
 Implementer:
@@ -188,13 +368,68 @@ Implementer: Extracted PROGRESS_INTERVAL constant
 [Code reviewer reviews again]
 Code reviewer: ✅ Approved
 
+[Dispatch unit test-runner — commands from task ITC]
+Test runner:
+  Status: PASS
+  Results:
+    - command: "npm test -- src/recovery.test.ts"
+      status: PASS
+      summary: "8/8 tests passed"
+
+[task ITC tiers_required: [unit, integration] — dispatch integration test-runner]
+
+[Dispatch integration test-runner — integration commands from task ITC]
+Test runner:
+  Status: PASS
+  Results:
+    - command: "npm test -- tests/integration/recovery.test.ts"
+      status: PASS
+      summary: "4/4 tests passed"
+
 [Mark Task 2 complete]
 
 ...
 
-[After all tasks]
-[Dispatch final code-reviewer]
-Final reviewer: All requirements met, ready to merge
+[After all tasks complete]
+
+[Load docs/superpowers/specs/<date>-<topic>-journeys.yaml and skills/subagent-driven-development/testing-strategies.md]
+
+[Dispatch coding-agent Solution ITC Round 1 — scans actual implementation + journeys.yaml + playbook]
+Coding agent: Documents real routes. Produces coverage_matrix with rows per journey,
+              columns per strategy (happy_path, negative_path, state_persistence,
+              feature_interaction, auth_boundary). Every cell = scenario or justified na.
+              coding_agent: ✅
+
+[Dispatch testing-agent Solution ITC Round 2 — draft matrix + journeys.yaml + playbook]
+Testing agent: ✅ Approved — matrix complete, no shallow assertion_shapes, na justifications valid.
+
+[Post-negotiation gate: verify matrix has row per journey × column per strategy, no empty cells]
+
+[Write docs/superpowers/contracts/2026-04-20T16-00-00-solution_itc.md and commit]
+
+[Dispatch E2E + full suite test-runner — coverage_matrix + full_suite command]
+Test runner:
+  Status: PASS
+  matrix_results:
+    J1:
+      happy_path:          { status: PASS }
+      negative_path:       { status: PASS }
+      state_persistence:   { status: PASS }
+      feature_interaction: { status: PASS }
+      auth_boundary:       { status: PASS }
+    J2:
+      happy_path:          { status: PASS }
+      negative_path:       { status: PASS }
+      state_persistence:   { status: NA, justification: "Single atomic request, no multi-step state." }
+      feature_interaction: { status: PASS }
+      auth_boundary:       { status: NA, justification: "Fully public journey, no auth surface." }
+  full_suite:
+    status: PASS
+    summary: "47/47 tests passed"
+  overall: PASS
+
+[Dispatch final code reviewer subagent for entire implementation]
+Final reviewer: All requirements met, no regressions, ready to merge
 
 Done!
 ```
@@ -221,6 +456,8 @@ Done!
 **Quality gates:**
 - Self-review catches issues before handoff
 - Two-stage review: spec compliance, then code quality
+- Runtime test harness: unit tests (always) + integration tests (when task ITC requires)
+- E2E harness after all tasks: full user journey verified before final review
 - Review loops ensure fixes actually work
 - Spec compliance prevents over/under-building
 - Code quality ensures implementation is well-built
@@ -246,6 +483,14 @@ Done!
 - Let implementer self-review replace actual review (both are needed)
 - **Start code quality review before spec compliance is ✅** (wrong order)
 - Move to next task while either review has open issues
+- Skip ITC negotiation because "the task is simple" (every task gets a contract)
+- Start implementing before both agents have signed the ITC ✅
+- Renegotiate the ITC because tests are failing (fix the code, not the contract)
+- Dispatch implementer in response to BLOCKED test-runner (resolve environment or escalate to user instead)
+- Attempt to set env vars or configure external services autonomously — escalate to user for those
+- Proceed past FAIL test-runner without re-running harness after implementer fix
+- Run integration test-runner before unit tests PASS
+- Forget to write and commit the ITC file to docs/superpowers/contracts/ after negotiation
 
 **If subagent asks questions:**
 - Answer clearly and completely
@@ -269,6 +514,7 @@ Done!
 - **superpowers:writing-plans** - Creates the plan this skill executes
 - **superpowers:requesting-code-review** - Code review template for reviewer subagents
 - **superpowers:finishing-a-development-branch** - Complete development after all tasks
+- **superpowers:systematic-debugging** - If test-runner returns FAIL repeatedly, use to find root cause before re-dispatching implementer
 
 **Subagents should use:**
 - **superpowers:test-driven-development** - Subagents follow TDD for each task
