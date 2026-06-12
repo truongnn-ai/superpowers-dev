@@ -53,11 +53,12 @@ Superpowers adds structured workflow overhead (brainstorm → plan → TDD → r
 ## Guides
 
 
-| Guide                                      | What it covers                                    |
-| ------------------------------------------ | ------------------------------------------------- |
-| [Quick Start](quick-start.md)              | Install and complete your first task in 5 minutes |
-| [Daily Workflows](daily-workflows.md)      | The 4 flows you'll use every day                  |
-| [Skills Cheat Sheet](skills-cheatsheet.md) | Situation → skill → what to expect                |
-| [Guide for Team Leads](team-leads.md)      | Rolling out to the team, setting norms            |
+| Guide                                                    | What it covers                                              |
+| -------------------------------------------------------- | ----------------------------------------------------------- |
+| [Quick Start](quick-start.md)                            | Install and complete your first task in 5 minutes           |
+| [Claude Code Settings](claude-code-settings.md)          | Settings scopes, model selection, plugins, permissions, modes |
+| [Daily Workflows](daily-workflows.md)                    | The 4 flows you'll use every day                            |
+| [Skills Cheat Sheet](skills-cheatsheet.md)               | Situation → skill → what to expect                          |
+| [Guide for Team Leads](team-leads.md)                    | Rolling out to the team, setting norms                      |
 
 
