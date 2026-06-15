@@ -1,6 +1,22 @@
-# Claude Code Settings for Engineering Teams
+# Configuring Claude Code: A Team's Cost & Safety Guide
 
 Get your team configured correctly from day one.
+
+---
+
+## Table of Contents
+
+1. [Install Claude Code](#1-install-claude-code)
+2. [Configuration scopes](#2-configuration-scopes)
+   - [2.1 Available Scopes](#21-available-scopes)
+   - [2.2 What uses scopes](#22-what-uses-scopes)
+   - [2.3 Settings File (Important)](#23-settings-file-important)
+   - [2.4 What goes where (suggested practice)](#24-what-goes-where-suggested-practice)
+3. [Model Selection (Important)](#3-model-selection-important)
+4. [Managing Plugins and Skills](#4-managing-plugins-and-skills)
+5. [Permissions](#5-permissions)
+6. [Claude Code Modes](#6-claude-code-modes)
+7. [Sample Session Workflow](#7-sample-session-workflow)
 
 ---
 
